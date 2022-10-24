@@ -17,12 +17,13 @@ let package = Package(
         )
     ],
     dependencies: [
+        .package(url: "https://github.com/vmanot/FoundationX.git", branch: "master"),
         .package(url: "https://github.com/vmanot/Swallow.git", branch: "master")
     ],
     targets: [
         .target(
             name: "Media",
-            dependencies: ["Swallow"],
+            dependencies: ["FoundationX", "Swallow"],
             path: "Sources"
         ),
         .testTarget(
