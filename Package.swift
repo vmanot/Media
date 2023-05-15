@@ -1,4 +1,4 @@
-// swift-tools-version:5.6
+// swift-tools-version:5.7
 
 import PackageDescription
 
@@ -13,22 +13,32 @@ let package = Package(
     products: [
         .library(
             name: "Media",
-            targets: ["Media"]
+            targets: [
+                "Media"
+            ]
         )
     ],
     dependencies: [
+        .package(url: "https://github.com/kean/Nuke", from: "12.0.0-beta.5"),
+        .package(url: "https://github.com/SwiftUIX/SwiftUIX.git", branch: "master"),
         .package(url: "https://github.com/vmanot/FoundationX.git", branch: "master"),
         .package(url: "https://github.com/vmanot/Swallow.git", branch: "master")
     ],
     targets: [
         .target(
             name: "Media",
-            dependencies: ["FoundationX", "Swallow"],
-            path: "Sources"
+            dependencies: [
+                "FoundationX",
+                .product(name: "NukeUI", package: "Nuke"),
+                "SwiftUIX",
+                "Swallow"
+            ]
         ),
         .testTarget(
             name: "MediaTests",
-            dependencies: ["Media"],
+            dependencies: [
+                "Media"
+            ],
             path: "Tests"
         )
     ]

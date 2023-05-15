@@ -2,6 +2,7 @@
 // Copyright (c) Vatsal Manot
 //
 
+import Combine
 import AVFoundation
 import SwiftUIX
 
@@ -21,11 +22,13 @@ public class SpeechSynthesizer: NSObject, AVSpeechSynthesizerDelegate {
         
     }
     
-    func speak(_ utterance: SpeechUtterance) {
-        synthesizer.speak(AVSpeechUtterance(string: utterance.string).then {
-            $0.rate = utterance.rate
-            $0.pitchMultiplier = utterance.pitch
-            $0.voice = AVSpeechSynthesisVoice(language: utterance.language)!
-        })
+    func speak(_ u: SpeechUtterance) {
+        let utterance = AVSpeechUtterance(string: u.string)
+        
+        utterance.rate = utterance.rate
+        utterance.pitchMultiplier = u.pitch
+        utterance.voice = AVSpeechSynthesisVoice(language: u.language)!
+        
+        return synthesizer.speak(utterance)
     }
 }
