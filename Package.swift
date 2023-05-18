@@ -28,7 +28,6 @@ let package = Package(
         .target(
             name: "Media",
             dependencies: [
-                "FoundationX",
                 .product(name: "NukeUI", package: "Nuke"),
                 "SwiftUIX",
                 "Swallow"
