@@ -6,7 +6,7 @@ import Foundation
 import SwiftUI
 import UniformTypeIdentifiers
 
-public enum ImageType: CaseIterable {
+public enum _ImageFormatType: CaseIterable {
     case gif
     case jpeg
     case png

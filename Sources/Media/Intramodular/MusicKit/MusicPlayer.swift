@@ -7,7 +7,7 @@ import Combine
 import MediaPlayer
 import Swift
 
-#if os(iOS) || os(tvOS) || targetEnvironment(macCatalyst)
+#if os(iOS) || os(tvOS) || os(visionOS) || targetEnvironment(macCatalyst)
 
 public final class MusicPlayer: ObservableObject {
     public static let system = MusicPlayer(base: .systemMusicPlayer)

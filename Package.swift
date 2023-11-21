@@ -1,14 +1,14 @@
-// swift-tools-version:5.7
+// swift-tools-version:5.8
 
 import PackageDescription
 
 let package = Package(
     name: "Media",
     platforms: [
-        .iOS(.v14),
-        .macOS(.v12),
-        .tvOS(.v14),
-        .watchOS(.v7)
+        .iOS(.v16),
+        .macOS(.v13),
+        .tvOS(.v16),
+        .watchOS(.v9)
     ],
     products: [
         .library(
@@ -19,8 +19,9 @@ let package = Package(
         )
     ],
     dependencies: [
-        .package(url: "https://github.com/kean/Nuke", from: "12.0.0-beta.5"),
+        .package(url: "https://github.com/kean/Nuke.git", from: "12.1.6"),
         .package(url: "https://github.com/SwiftUIX/SwiftUIX.git", branch: "master"),
+        .package(url: "https://github.com/SwiftUIX/SwiftUIZ.git", branch: "main"),
         .package(url: "https://github.com/vmanot/Swallow.git", branch: "master")
     ],
     targets: [
@@ -28,8 +29,9 @@ let package = Package(
             name: "Media",
             dependencies: [
                 .product(name: "NukeUI", package: "Nuke"),
+                "Swallow",
                 "SwiftUIX",
-                "Swallow"
+                "SwiftUIZ",
             ]
         ),
         .testTarget(
