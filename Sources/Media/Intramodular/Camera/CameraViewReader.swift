@@ -32,13 +32,15 @@ protocol _CameraViewProxyBase: AnyObject {
     func capturePhoto() async throws -> AppKitOrUIKitImage
 }
 
-public struct CameraViewProxy: Equatable {
+public struct CameraViewProxy {
     weak var base: _CameraViewProxyBase?
     
-    func capturePhoto() async throws -> AppKitOrUIKitImage {
+    public func capturePhoto() async throws -> AppKitOrUIKitImage {
         try await base.unwrap().capturePhoto()
     }
-    
+}
+
+extension CameraViewProxy: Equatable {
     public static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.base === rhs.base
     }
