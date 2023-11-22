@@ -51,23 +51,7 @@ extension NSImage {
     }
 }
 
-extension AppKitOrUIKitImage {
-    public func data(
-        type: NSBitmapImageRep.FileType = .png,
-        properties: [NSBitmapImageRep.PropertyKey: Any] = [:]
-    ) throws -> Data {
-        guard let tiffRepresentation = self.tiffRepresentation,
-              let bitmapImage = NSBitmapImageRep(data: tiffRepresentation) else {
-            throw ImageWriteError.unableToCreateDataRepresentation
-        }
-        
-        guard let data = bitmapImage.representation(using: type, properties: properties) else {
-            throw ImageWriteError.unableToCreateDataRepresentation
-        }
-        
-        return data
-    }
-    
+extension AppKitOrUIKitImage {    
     public func write(
         to url: URL,
         type: NSBitmapImageRep.FileType = .png,
