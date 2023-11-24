@@ -10,15 +10,16 @@ import Merge
 import Swallow
 import SwiftUIX
 
-class CameraService: NSObject {
-    weak var previewView: NSView?
+#if os(macOS)
+class _CaptureSessionManager: NSObject {
+    weak var _representableView: AppKitOrUIKitView?
     
     private(set) var cameraIsReadyToUse = false
     private let session = AVCaptureSession()
     private weak var previewLayer: AVCaptureVideoPreviewLayer?
     private lazy var capturePhotoOutput = AVCapturePhotoOutput()
     private lazy var dataOutputQueue = DispatchQueue(
-        label: "FaceDetectionService",
+        label: UUID().uuidString,
         qos: .userInitiated,
         attributes: [],
         autoreleaseFrequency: .workItem
@@ -26,9 +27,9 @@ class CameraService: NSObject {
     private var captureCompletionBlock: ((NSImage) -> Void)?
     private var preparingCompletionHandler: ((Bool) -> Void)?
     private var snapshotImageOrientation = CGImagePropertyOrientation.upMirrored
-        
+    
     init(previewView: NSView) {
-        self.previewView = previewView
+        self._representableView = previewView
         
         super.init()
         
@@ -39,7 +40,7 @@ class CameraService: NSObject {
         previewView: NSView,
         completion: ((Bool) -> Void)?
     ) {
-        self.previewView = previewView
+        self._representableView = previewView
         self.preparingCompletionHandler = completion
         checkCameraAccess { allowed in
             if allowed {
@@ -65,7 +66,7 @@ class CameraService: NSObject {
     }
 }
 
-extension CameraService {
+extension _CaptureSessionManager {
     
     private func checkCameraAccess(completion: ((Bool) -> Void)?) {
         // Handle camera access permission on macOS
@@ -74,7 +75,7 @@ extension CameraService {
     }
     
     private func configureCaptureSession() {
-        guard let previewView = previewView else {
+        guard let previewView = _representableView else {
             assertionFailure()
             
             return
@@ -91,7 +92,7 @@ extension CameraService {
             session.addInput(cameraInput)
         } catch {
             assertionFailure()
-
+            
             return
         }
         
@@ -101,7 +102,7 @@ extension CameraService {
         session.addOutput(videoOutput)
         
         let previewLayer = AVCaptureVideoPreviewLayer(session: session)
-
+        
         previewLayer.connection?.automaticallyAdjustsVideoMirroring = false
         previewLayer.connection?.isVideoMirrored = true
         
@@ -113,7 +114,7 @@ extension CameraService {
     }
 }
 
-extension CameraService: AVCapturePhotoCaptureDelegate, AVCaptureVideoDataOutputSampleBufferDelegate {
+extension _CaptureSessionManager: AVCapturePhotoCaptureDelegate, AVCaptureVideoDataOutputSampleBufferDelegate {
     func captureOutput(
         _ output: AVCaptureOutput,
         didOutput sampleBuffer: CMSampleBuffer,
@@ -128,7 +129,7 @@ extension CameraService: AVCapturePhotoCaptureDelegate, AVCaptureVideoDataOutput
         {
             return
         }
-
+        
         DispatchQueue.main.async {
             captureCompletionBlock(outputImage)
         }
@@ -136,7 +137,7 @@ extension CameraService: AVCapturePhotoCaptureDelegate, AVCaptureVideoDataOutput
 }
 
 
-extension CameraService {
+extension _CaptureSessionManager {
     func capturePhoto() async throws -> _UncheckedSendable<AppKitOrUIKitImage> {
         return await withCheckedContinuation { continuation in
             self.captureCompletionBlock = { image in
@@ -146,3 +147,4 @@ extension CameraService {
         }
     }
 }
+#endif

@@ -4,6 +4,7 @@
 
 @_spi(Internal) import SwiftUIZ
 
+#if os(macOS)
 public struct CameraView: View {
     @ViewStorage private var _proxy = CameraViewProxy(base: nil)
     
@@ -16,3 +17,4 @@ public struct CameraView: View {
             ._provideViewProxy(_proxy)
     }
 }
+#endif

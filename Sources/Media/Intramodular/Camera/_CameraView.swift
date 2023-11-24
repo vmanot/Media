@@ -3,15 +3,14 @@
 //
 
 import AVFoundation
-@_spi(Internal) import SwiftUIZ
+import SwiftUIZ
 
+#if os(macOS)
 struct _CameraView: AppKitOrUIKitViewRepresentable {
-    typealias AppKitOrUIKitViewType = CameraPreviewView
-    
     @Binding var _proxy: CameraViewProxy
     
     func makeAppKitOrUIKitView(context: Context) -> AppKitOrUIKitViewType {
-        let view = CameraPreviewView()
+        let view = AppKitOrUIKitViewType()
         
         return view
     }
@@ -19,38 +18,21 @@ struct _CameraView: AppKitOrUIKitViewRepresentable {
     func updateAppKitOrUIKitView(_ view: AppKitOrUIKitViewType, context: Context) {
         _proxy.base = view
     }
-}
-
-class CameraPreviewView: NSView {
-    lazy var cameraService = CameraService(previewView: self)
     
-    var previewLayer: AVCaptureVideoPreviewLayer?
-    
-    override func viewDidMoveToWindow() {
-        super.viewDidMoveToWindow()
+    class AppKitOrUIKitViewType: AppKitOrUIKitView {
+        lazy var captureSession = _CaptureSessionManager(previewView: self)
         
-        setupCameraSession()
-    }
-    
-    private func setupCameraSession() {
-        cameraService.start()
-    }
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            
+            captureSession.start()
+        }
         
-    override func layout() {
-        super.layout()
-        
-        cameraService.previewView?.frame = bounds
-    }
-}
-
-#if os(macOS)
-extension NSImage {
-    public convenience init?(cgImage: CGImage) {
-        let size = NSSize(
-            width: cgImage.width,
-            height: cgImage.height
-        )
-        self.init(cgImage: cgImage, size: size)
+        override func layout() {
+            super.layout()
+            
+            captureSession._representableView?.frame = bounds
+        }
     }
 }
 #endif

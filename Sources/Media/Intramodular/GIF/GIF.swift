@@ -34,7 +34,7 @@ public struct GIF: View {
                         self.data = (state.result?.leftValue?.container.data).flatMap(GIF.Data.init(rawValue:))
                     }
                 } else {
-                    Color.secondarySystemBackground
+                    Color.secondary
                 }
             }
             .priority(.high)
