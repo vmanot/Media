@@ -21,7 +21,7 @@ public final class AudioRecorder: NSObject, ObservableObject {
     private var base: AVAudioRecorder?
     private var recordingLocationURL: URL?
     
-    public private(set) var recording: AssetLocation?
+    public private(set) var recording: MediaAssetLocation?
     
     public override init() {
         state = .unprepared

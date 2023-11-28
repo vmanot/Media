@@ -13,7 +13,7 @@ public final class AudioPlayer: NSObject, ObservableObject {
     private var base: AVAudioPlayer?
     private var session: AVAudioSession = .sharedInstance()
     
-    public var source: AssetLocation?
+    public var source: MediaAssetLocation?
     
     public var isPlaying: Bool {
         base?.isPlaying ?? false
