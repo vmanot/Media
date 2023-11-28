@@ -5,7 +5,7 @@
 import Foundation
 import Swift
 
-public enum AssetLocation: Hashable {
+public enum MediaAssetLocation: Hashable {
     case data(Data)
     case url(URL)
 

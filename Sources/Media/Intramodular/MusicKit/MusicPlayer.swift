@@ -2,13 +2,14 @@
 // Copyright (c) Vatsal Manot
 //
 
+#if os(iOS) || os(tvOS) || os(visionOS) || targetEnvironment(macCatalyst)
+
 import AVFoundation
 import Combine
 import MediaPlayer
 import Swift
 
-#if os(iOS) || os(tvOS) || os(visionOS) || targetEnvironment(macCatalyst)
-
+@_spi(Internal)
 public final class MusicPlayer: ObservableObject {
     public static let system = MusicPlayer(base: .systemMusicPlayer)
     
