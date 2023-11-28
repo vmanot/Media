@@ -9,6 +9,7 @@ import Foundation
 import Merge
 import SwiftUIX
 
+/// A sane, modern replacement for `AVAudioRecorder`.
 public final class AudioRecorder: NSObject, ObservableObject {
     public enum State {
         case unprepared
@@ -57,24 +58,6 @@ public final class AudioRecorder: NSObject, ObservableObject {
                 fatalError()
             }
         }
-    }
-}
-
-extension AudioRecorder: AVAudioRecorderDelegate {
-    public func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder, successfully flag: Bool) {
-        
-    }
-    
-    public func audioRecorderEncodeErrorDidOccur(_ recorder: AVAudioRecorder, error: Error?) {
-        
-    }
-    
-    public func audioRecorderBeginInterruption(_ recorder: AVAudioRecorder) {
-        
-    }
-    
-    public func audioRecorderEndInterruption(_ recorder: AVAudioRecorder, withOptions flags: Int) {
-        
     }
 }
 
@@ -148,6 +131,37 @@ extension AudioRecorder {
             case .stopped:
                 return record()
         }
+    }
+}
+
+// MARK: - Conformances
+
+extension AudioRecorder: AVAudioRecorderDelegate {
+    public func audioRecorderDidFinishRecording(
+        _ recorder: AVAudioRecorder,
+        successfully flag: Bool
+    ) {
+        
+    }
+    
+    public func audioRecorderEncodeErrorDidOccur(
+        _ recorder: AVAudioRecorder,
+        error: Error?
+    ) {
+        
+    }
+    
+    public func audioRecorderBeginInterruption(
+        _ recorder: AVAudioRecorder
+    ) {
+        
+    }
+    
+    public func audioRecorderEndInterruption(
+        _ recorder: AVAudioRecorder,
+        withOptions flags: Int
+    ) {
+        
     }
 }
 

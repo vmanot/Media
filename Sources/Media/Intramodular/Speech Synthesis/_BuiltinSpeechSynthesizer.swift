@@ -8,7 +8,9 @@ import Swallow
 import SwiftUIX
 
 public class _BuiltinSpeechManager: ObservableObject {
-    lazy var languageCodes = AVSpeechSynthesisVoice.speechVoices().map({ $0.language })
+    lazy var languageCodes = AVSpeechSynthesisVoice.speechVoices().map({
+        $0.language
+    })
     
     func displayName(
         for languageCode: String,
