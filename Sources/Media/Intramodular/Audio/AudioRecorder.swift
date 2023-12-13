@@ -2,7 +2,7 @@
 // Copyright (c) Vatsal Manot
 //
 
-#if os(iOS) || targetEnvironment(macCatalyst)
+#if os(iOS) || os(macOS) || os(tvOS) || os(visionOS) || targetEnvironment(macCatalyst)
 
 import AVFoundation
 import Foundation
@@ -19,7 +19,14 @@ public final class AudioRecorder: NSObject, ObservableObject {
         case stopped
     }
     
-    private var base: AVAudioRecorder?
+    private var _base: AVAudioRecorder?
+    
+    public var base: AVAudioRecorder {
+        get throws {
+            try _base.unwrap()
+        }
+    }
+    
     private var recordingLocationURL: URL?
     
     public private(set) var recording: MediaAssetLocation?
@@ -31,7 +38,9 @@ public final class AudioRecorder: NSObject, ObservableObject {
     @Published public private(set) var state: State
     
     public var normalizedPowerLevel: Float {
-        guard let base = base else {
+        guard let base = _base else {
+            runtimeIssue(Never.Reason.illegal)
+            
             return 0
         }
         
@@ -62,74 +71,76 @@ public final class AudioRecorder: NSObject, ObservableObject {
 }
 
 extension AudioRecorder {
-    public func prepare() -> AnySingleOutputPublisher<Void, Error> {
-        Future.perform { [self] in
-            recordingLocationURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".m4a")
-            recording = .init(try recordingLocationURL.unwrap())
-            
-            base = try AVAudioRecorder(url: try recordingLocationURL.unwrap(), settings: [
-                AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
-                AVSampleRateKey: 12000,
-                AVNumberOfChannelsKey: 1,
-                AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
-            ])
-            
-            try base.unwrap().delegate = self
-            try base.unwrap().isMeteringEnabled = true
-            try base.unwrap().prepareToRecord()
-        }
-        .then(on: DispatchQueue.main) {
-            self.state = .prepared
-        }
-        .eraseToAnySingleOutputPublisher()
+    @MainActor
+    public func prepare() async throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".m4a")
+        
+        recording = .init(url)
+        
+        self._base = try AVAudioRecorder(url: url, settings: [
+            AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
+            AVSampleRateKey: 12000,
+            AVNumberOfChannelsKey: 1,
+            AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
+        ])
+        
+        try base.delegate = self
+        try base.isMeteringEnabled = true
+        try base.prepareToRecord()
+        
+        self.state = .prepared
     }
     
-    public func record() -> AnySingleOutputPublisher<Void, Error> {
-        prepare()
-            .tryMap {
-                try AVAudioSession.sharedInstance().setCategory(.record, mode: .default)
-                try AVAudioSession.sharedInstance().setActive(true)
-                
-                try self.base.unwrap().record()
-            }
-            .then(on: DispatchQueue.main) {
-                self.state = .recording
-            }
-            .eraseToAnySingleOutputPublisher()
+    @MainActor
+    public func record() async throws {
+        try _AVAudioSession.shared.setCategory(.record, mode: .default)
+        try _AVAudioSession.shared.setActive(true)
+        
+        guard try base.record() else {
+            throw _PlaceholderError()
+        }
+        
+        self.state = .recording
     }
     
-    public func pause() -> AnySingleOutputPublisher<Void, Error> {
-        Future.perform {
-            try self.base.unwrap().pause()
-        }
-        .then(on: DispatchQueue.main) {
-            self.state = .paused
-        }
-        .eraseToAnySingleOutputPublisher()
+    @MainActor
+    public func pause() async throws {
+        try self.base.pause()
+        
+        self.state = .paused
     }
     
-    public func stop() -> AnySingleOutputPublisher<Void, Error> {
-        Future<Void, Error>.perform(on: DispatchQueue.global(qos: .userInitiated)) {
-            try self.base.unwrap().stop()
-            
-            self.recording = .data(try self.recording.unwrap().data())
-        }
-        .then(on: DispatchQueue.main) {
-            self.state = .stopped
-        }
-        .eraseToAnySingleOutputPublisher()
+    @discardableResult
+    @MainActor
+    public func stop() async throws -> MediaAssetLocation {
+        try _AVAudioSession.shared.setActive(false)
+
+        try self.base.stop()
+        
+        let audio = try self.recording.unwrap()
+
+        let result = MediaAssetLocation.data(
+            try audio.data(),
+            fileTypeHint: audio.fileTypeHint
+        )
+        
+        self.recording = result
+        
+        self.state = .stopped
+        
+        return result
     }
     
-    public func toggleRecordPause() -> AnySingleOutputPublisher<Void, Error> {
+    public func toggleRecordPause() async throws {
         switch state {
             case .unprepared, .prepared:
-                return record()
+                return try await record()
             case .recording:
-                return pause()
+                return try await pause()
             case .paused:
-                return record()
+                return try await record()
             case .stopped:
-                return record()
+                return try await record()
         }
     }
 }

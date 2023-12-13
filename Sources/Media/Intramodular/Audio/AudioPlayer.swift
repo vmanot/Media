@@ -5,115 +5,74 @@
 #if os(iOS) || os(tvOS) || os(macOS) || os(visionOS)
 
 import AVFoundation
-import Combine
 import Foundation
 import Swallow
-import SwiftUI
 
-/// A sane, modern replacement for `AVAudioPlayer`.
-public final class AudioPlayer: NSObject, ObservableObject {
-    private var _base: AVAudioPlayer?
-    #if os(iOS) || os(tvOS) || os(visionOS)
-    private var session: AVAudioSession = .sharedInstance()
-    #endif
+public final class AudioPlayer {
+    private var shouldDeactivateAudioSession = true
+    private var didSetUp = false
     
-    public var base: AVAudioPlayer {
-        get throws {
-            try _base.unwrap()
-        }
+    public init() {
+        _ = try? setUp()
     }
     
-    public var _source: MediaAssetLocation?
-    
-    public var isPlaying: Bool {
-        (try? base.isPlaying) ?? false
-    }
-}
-
-extension AudioPlayer {
-    public func prepare() throws {
-        guard let source = _source else {
+    private func setUp() throws {
+        if didSetUp {
             return
         }
         
-        switch source {
-            case .url(let url):
-                _base = try AVAudioPlayer(contentsOf: url)
-            case .data(let data):
-                _base = try AVAudioPlayer(data: data)
+        defer {
+            didSetUp = true
         }
         
-        try base.delegate = self
-    }
-    
-    public func play() throws {
-        try base.play()
-    }
-    
-    public func pause() throws {
-        try base.pause()
-    }
-    
-    public func stop() throws {
-        try base.stop()
+        let audioSession = _AVAudioSession.shared
         
-        _base = nil
-        _source = nil
-    }
-    
-    public func toggle() throws {
-        if isPlaying {
-            try pause()
-        } else {
-            try play()
-        }
-    }
-}
-
-extension AudioPlayer: AVAudioPlayerDelegate {
-    public func audioPlayerDidFinishPlaying(
-        _ player: AVAudioPlayer,
-        successfully flag: Bool
-    ) {
-        objectWillChange.send()
-    }
-    
-    public func audioPlayerDecodeErrorDidOccur(
-        _ player: AVAudioPlayer,
-        error: Error?
-    ) {
-        objectWillChange.send()
-    }
-    
-    public func audioPlayerBeginInterruption(
-        _ player: AVAudioPlayer
-    ) {
-        objectWillChange.send()
-    }
-    
-    public func audioPlayerEndInterruption(
-        _ player: AVAudioPlayer,
-        withOptions flags: Int
-    ) {
-        objectWillChange.send()
-    }
-}
-
-#if os(iOS) || os(tvOS) || os(visionOS)
-extension AudioPlayer {
-    func _configureSharedAudioSessionIfAvailable() {
         _expectNoThrow {
-            try session.setCategory(.playback, options: .defaultToSpeaker)
-            try session.setActive(true, options: [])
+            try audioSession.setCategory(.playback, mode: .default)
+            try audioSession.setActive(true)
+        }
+        
+        shouldDeactivateAudioSession = true
+    }
+    
+    private func tearDown() throws {
+        guard shouldDeactivateAudioSession else {
+            return
+        }
+        
+        try _AVAudioSession.shared.setActive(false)
+    }
+    
+    deinit {
+        _ = try? tearDown()
+    }
+    
+    public func play(
+        _ asset: MediaAssetLocation
+    ) async throws {
+        let player = _AVAudioPlayer(asset: asset, volume: 1.0)
+        
+        try await withCheckedThrowingContinuation { continuation in
+            player.play { result in
+                continuation.resume(with: result)
+            }
         }
     }
 }
-#else
+
 extension AudioPlayer {
-    func _configureSharedAudioSessionIfAvailable() {
-        // fuck you macOS
+    public func play(
+        _ url: URL
+    ) async throws {
+        try await play(.url(url))
+    }
+    
+    public func play(
+        _ data: Data,
+        fileTypeHint: String?
+    ) async throws {
+        try await play(.data(data, fileTypeHint: fileTypeHint))
     }
 }
-#endif
 
 #endif

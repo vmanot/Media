@@ -5,7 +5,7 @@
 import AVFoundation
 import SwiftUIZ
 
-#if os(macOS)
+#if os(iOS) || os(macOS)
 struct _CameraView: AppKitOrUIKitViewRepresentable {
     @Binding var _proxy: CameraViewProxy
     
@@ -18,7 +18,28 @@ struct _CameraView: AppKitOrUIKitViewRepresentable {
     func updateAppKitOrUIKitView(_ view: AppKitOrUIKitViewType, context: Context) {
         _proxy.base = view
     }
-    
+}
+
+#if os(iOS)
+extension _CameraView {
+    class AppKitOrUIKitViewType: AppKitOrUIKitView {
+        lazy var captureSession = _CaptureSessionManager(previewView: self)
+        
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            
+            captureSession.start()
+        }
+        
+        override func layoutSubviews() {
+            super.layoutSubviews()
+            
+            captureSession._representableView?._SwiftUIX_firstLayer?.frame = bounds
+        }
+    }
+}
+#elseif os(macOS)
+extension _CameraView {
     class AppKitOrUIKitViewType: AppKitOrUIKitView {
         lazy var captureSession = _CaptureSessionManager(previewView: self)
         
@@ -35,4 +56,12 @@ struct _CameraView: AppKitOrUIKitViewRepresentable {
         }
     }
 }
+#endif
+
+extension _CameraView.AppKitOrUIKitViewType: _CameraViewProxyBase {
+    func capturePhoto() async throws -> AppKitOrUIKitImage {
+        try await captureSession.capturePhoto().wrappedValue
+    }
+}
+
 #endif

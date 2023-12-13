@@ -18,16 +18,6 @@ public struct CameraViewReader<Content: View>: View {
     }
 }
 
-// MARK: - Conformances
-
-#if os(macOS)
-extension _CameraView.AppKitOrUIKitViewType: _CameraViewProxyBase {
-    func capturePhoto() async throws -> AppKitOrUIKitImage {
-        try await captureSession.capturePhoto().wrappedValue
-    }
-}
-#endif
-
 // MARK: - Auxiliary
 
 protocol _CameraViewProxyBase: AnyObject {

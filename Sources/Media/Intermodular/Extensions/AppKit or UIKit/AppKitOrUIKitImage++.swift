@@ -5,14 +5,25 @@
 #if os(iOS) || os(macOS)
 
 import AVFoundation
-import SwiftUIX
+@_spi(Internal) import SwiftUIX
 
 #if os(iOS) || os(tvOS) || os(visionOS)
 extension UIImage {
     @_disfavoredOverload
     public convenience init?(
         sampleBuffer: CMSampleBuffer,
-        orientation: UIImage.Orientation = .upMirrored
+        orientation: CGImagePropertyOrientation = .up
+    ) {
+        self.init(
+            sampleBuffer: sampleBuffer,
+            orientation: UIImage.Orientation(orientation)
+        )
+    }
+    
+    @_disfavoredOverload
+    public convenience init?(
+        sampleBuffer: CMSampleBuffer,
+        orientation: UIImage.Orientation = .up
     ) {
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
             return nil
@@ -99,7 +110,7 @@ extension NSImage {
     }
 }
 
-extension AppKitOrUIKitImage {    
+extension AppKitOrUIKitImage {
     public func write(
         to url: URL,
         type: NSBitmapImageRep.FileType = .png,
