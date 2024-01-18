@@ -1,4 +1,4 @@
-// swift-tools-version:5.8
+// swift-tools-version:5.9
 
 import PackageDescription
 
@@ -19,7 +19,7 @@ let package = Package(
         )
     ],
     dependencies: [
-        .package(url: "https://github.com/kean/Nuke.git", from: "12.1.6"),
+        .package(url: "https://github.com/kean/Nuke.git", from: "12.3.0"),
         .package(url: "https://github.com/SwiftUIX/SwiftUIX.git", branch: "master"),
         .package(url: "https://github.com/SwiftUIX/SwiftUIZ.git", branch: "main"),
         .package(url: "https://github.com/vmanot/Swallow.git", branch: "master")
