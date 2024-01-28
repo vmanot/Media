@@ -2,8 +2,8 @@
 // Copyright (c) Vatsal Manot
 //
 
-@_implementationOnly import Nuke
-@_implementationOnly import NukeUI
+import Nuke
+import NukeUI
 import Swallow
 import SwiftUIX
 

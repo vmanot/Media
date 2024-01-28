@@ -8,9 +8,18 @@ import AVFoundation
 import Foundation
 import Swallow
 
-public final class AudioPlayer {
+public final class AudioPlayer: Sendable {
     private var shouldDeactivateAudioSession = true
     private var didSetUp = false
+    private var players: [_AVAudioPlayer] = []
+    
+    public var volume: Double? {
+        didSet {
+            if let volume {
+                players.forEach({ $0.volume = volume  })
+            }
+        }
+    }
     
     public init() {
         _ = try? setUp()
@@ -50,13 +59,22 @@ public final class AudioPlayer {
     public func play(
         _ asset: MediaAssetLocation
     ) async throws {
-        let player = _AVAudioPlayer(asset: asset, volume: 1.0)
+        let player = _AVAudioPlayer(asset: asset, volume: self.volume)
+        
+        players.append(player)
         
         try await withCheckedThrowingContinuation { continuation in
             player.play { result in
                 continuation.resume(with: result)
             }
         }
+        
+        players.removeAll(where: { $0 === player })
+    }
+    
+    public func stop() {
+        players.forEach({ $0.stop() })
+        players.removeAll()
     }
 }
 

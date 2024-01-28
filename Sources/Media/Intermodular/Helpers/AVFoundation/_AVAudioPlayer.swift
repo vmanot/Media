@@ -8,11 +8,20 @@ import AVFoundation
 
 class _AVAudioPlayer: NSObject, AVAudioPlayerDelegate {
     let asset: MediaAssetLocation
-    let volume: Double?
+    var volume: Double? {
+        didSet {
+            if let volume {
+                self.player?.volume = Float(volume)
+            }
+        }
+    }
     var completion: ((Result<Void, Error>) -> Void)?
     var player: AVAudioPlayer?
     
-    init(asset: MediaAssetLocation, volume: Double?) {
+    init(
+        asset: MediaAssetLocation,
+        volume: Double?
+    ) {
         self.asset = asset
         self.volume = volume
     }
@@ -37,12 +46,14 @@ class _AVAudioPlayer: NSObject, AVAudioPlayerDelegate {
             self.player = player
         } catch {
             completion(.failure(error))
+            
             tearDown()
         }
     }
     
     func stop() {
         player?.stop()
+        
         tearDown()
     }
     
