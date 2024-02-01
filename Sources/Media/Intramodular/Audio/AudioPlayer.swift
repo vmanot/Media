@@ -6,12 +6,19 @@
 
 import AVFoundation
 import Foundation
+import Merge
 import Swallow
 
-public final class AudioPlayer: Sendable {
+public final class AudioPlayer: ObservableObject, @unchecked Sendable {
+    public let objectWillChange = _AsyncObjectWillChangePublisher()
+    
     private var shouldDeactivateAudioSession = true
     private var didSetUp = false
     private var players: [_AVAudioPlayer] = []
+    
+    public var isPlaying: Bool {
+        players.contains(where: \.isPlaying)
+    }
     
     public var volume: Double? {
         didSet {
@@ -64,8 +71,12 @@ public final class AudioPlayer: Sendable {
         players.append(player)
         
         try await withCheckedThrowingContinuation { continuation in
-            player.play { result in
-                continuation.resume(with: result)
+            objectWillChange.withCriticalScope { objectWillChange in
+                objectWillChange.send()
+
+                player.play { result in
+                    continuation.resume(with: result)
+                }
             }
         }
         

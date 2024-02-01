@@ -18,6 +18,10 @@ class _AVAudioPlayer: NSObject, AVAudioPlayerDelegate {
     var completion: ((Result<Void, Error>) -> Void)?
     var player: AVAudioPlayer?
     
+    var isPlaying: Bool {
+        player?.isPlaying == true
+    }
+    
     init(
         asset: MediaAssetLocation,
         volume: Double?
