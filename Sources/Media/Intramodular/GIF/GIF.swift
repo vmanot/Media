@@ -2,8 +2,7 @@
 // Copyright (c) Vatsal Manot
 //
 
-import Nuke
-import NukeUI
+import _SwiftUIZ_NukeUI
 import Swallow
 import SwiftUIX
 
@@ -28,7 +27,7 @@ public struct GIF: View {
         ZStack {
             Color.black
             
-            NukeUI.LazyImage(url: url) { (state: LazyImageState) in
+            _SwiftUIZ_NukeUI.LazyImage(url: url) { (state: LazyImageState) in
                 if let image = state.image {
                     image.onAppear {
                         self.data = (state.result?.leftValue?.container.data).flatMap(GIF.Data.init(rawValue:))
