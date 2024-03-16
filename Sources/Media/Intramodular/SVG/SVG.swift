@@ -19,6 +19,10 @@ public struct SVG: View {
         )
     }
     
+    public init(url: URL) {
+        self.init(data: Data(contents))
+    }
+    
     public var body: some View {
         if let data {
             Group {
