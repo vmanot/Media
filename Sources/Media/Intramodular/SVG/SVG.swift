@@ -12,7 +12,10 @@ public struct SVG: View {
         self.data = data
     }
     
-    public init(_ name: String, bundle: Bundle? = nil) {
+    public init(
+        _ name: String,
+        bundle: Bundle? = nil
+    ) {
         self.data = Data(
             resourceWithName: name,
             bundle: bundle
@@ -20,7 +23,7 @@ public struct SVG: View {
     }
     
     public init(url: URL) {
-        self.init(data: Data(contents))
+        self.init(data: try! Data(contentsOf: url))
     }
     
     public var body: some View {
