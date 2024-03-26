@@ -102,7 +102,9 @@ extension NSImage {
             bytesPerRow: bytesPerRow,
             space: colorSpace,
             bitmapInfo: bitmapInfo.rawValue
-        ) else { return nil }
+        ) else {
+            return nil
+        }
         
         guard let cgImage = context.makeImage() else { return nil }
         

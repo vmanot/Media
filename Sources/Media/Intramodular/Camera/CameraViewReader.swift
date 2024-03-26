@@ -21,20 +21,19 @@ public struct CameraViewReader<Content: View>: View {
 // MARK: - Auxiliary
 
 protocol _CameraViewProxyBase: AnyObject {
+    @MainActor
     func capturePhoto() async throws -> AppKitOrUIKitImage
 }
 
-public struct CameraViewProxy {
+public struct CameraViewProxy: HashEquatable {
     weak var base: _CameraViewProxyBase?
     
     public func capturePhoto() async throws -> AppKitOrUIKitImage {
         try await base.unwrap().capturePhoto()
     }
-}
-
-extension CameraViewProxy: Equatable {
-    public static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.base === rhs.base
+    
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(base.map(ObjectIdentifier.init))
     }
 }
 

@@ -16,25 +16,25 @@ struct _CameraView: AppKitOrUIKitViewRepresentable {
     }
     
     func updateAppKitOrUIKitView(_ view: AppKitOrUIKitViewType, context: Context) {
-        _proxy.base = view
+        _proxy.base = view.captureSessionManager
     }
 }
 
 #if os(iOS)
 extension _CameraView {
     class AppKitOrUIKitViewType: AppKitOrUIKitView {
-        lazy var captureSession = _CaptureSessionManager(previewView: self)
+        lazy var captureSessionManager = _CaptureSessionManager(previewView: self)
         
         override func didMoveToWindow() {
             super.didMoveToWindow()
             
-            captureSession.start()
+            captureSessionManager.start()
         }
         
         override func layoutSubviews() {
             super.layoutSubviews()
             
-            captureSession._representableView?._SwiftUIX_firstLayer?.frame = bounds
+            captureSessionManager._representableView?._SwiftUIX_firstLayer?.frame = bounds
         }
     }
 }
@@ -57,11 +57,5 @@ extension _CameraView {
     }
 }
 #endif
-
-extension _CameraView.AppKitOrUIKitViewType: _CameraViewProxyBase {
-    func capturePhoto() async throws -> AppKitOrUIKitImage {
-        try await captureSession.capturePhoto().wrappedValue
-    }
-}
 
 #endif

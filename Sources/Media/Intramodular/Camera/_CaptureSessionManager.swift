@@ -8,6 +8,7 @@
 import AppKit
 #endif
 import AVFoundation
+import CoreGraphics
 import Merge
 import Swallow
 @_spi(Internal) import SwiftUIX
@@ -32,7 +33,8 @@ class _CaptureSessionManager: NSObject {
         autoreleaseFrequency: .workItem
     )
     
-    private var onImageOutput: ((AppKitOrUIKitImage) -> Void)?
+    @MainActor
+    private var imageOutputHandlers: [(AppKitOrUIKitImage) -> Void] = []
     private var snapshotImageOrientation = CGImagePropertyOrientation.upMirrored
     
     init(previewView: AppKitOrUIKitView) {
@@ -115,6 +117,10 @@ extension _CaptureSessionManager {
      
         session.addOutput(videoOutput)
         
+        #if os(iOS)
+        videoOutput.connection(with: .video)?.videoOrientation = .portrait
+        #endif
+        
         let previewLayer = AVCaptureVideoPreviewLayer(session: session)
         
         previewLayer.connection?.automaticallyAdjustsVideoMirroring = false
@@ -128,14 +134,36 @@ extension _CaptureSessionManager {
     }
 }
 
+
+#if os(iOS) || os(visionOS)
+extension CGImagePropertyOrientation {
+    init(videoOrientation: AVCaptureVideoOrientation) {
+        switch videoOrientation {
+            case .portrait: self = .right
+            case .portraitUpsideDown: self = .left
+            case .landscapeRight: self = .up
+            case .landscapeLeft: self = .down
+            @unknown default: self = .up
+        }
+    }
+}
+#endif
+
 extension _CaptureSessionManager: AVCapturePhotoCaptureDelegate, AVCaptureVideoDataOutputSampleBufferDelegate {
     func captureOutput(
         _ output: AVCaptureOutput,
         didOutput sampleBuffer: CMSampleBuffer,
         from connection: AVCaptureConnection
     ) {
+        let snapshotImageOrientation: CGImagePropertyOrientation
+        #if os(iOS) || os(visionOS)
+        snapshotImageOrientation = self.snapshotImageOrientation
+        #else
+        snapshotImageOrientation = self.snapshotImageOrientation
+        #endif
+        
         guard
-            let onImageOutput = onImageOutput,
+            !imageOutputHandlers.isEmpty,
             let outputImage = AppKitOrUIKitImage(
                 sampleBuffer: sampleBuffer,
                 orientation: snapshotImageOrientation
@@ -144,8 +172,12 @@ extension _CaptureSessionManager: AVCapturePhotoCaptureDelegate, AVCaptureVideoD
             return
         }
         
-        DispatchQueue.main.async {
-            onImageOutput(outputImage)
+        Task { @MainActor in
+            imageOutputHandlers.forEach { handler in
+                handler(outputImage)
+            }
+            
+            imageOutputHandlers.removeAll()
         }
     }
     
@@ -158,14 +190,13 @@ extension _CaptureSessionManager: AVCapturePhotoCaptureDelegate, AVCaptureVideoD
     }
 }
 
-extension _CaptureSessionManager {
-    func capturePhoto() async throws -> _UncheckedSendable<AppKitOrUIKitImage> {
+extension _CaptureSessionManager: _CameraViewProxyBase {
+    @MainActor
+    func capturePhoto() async throws -> AppKitOrUIKitImage {
         return await withCheckedContinuation { continuation in
-            self.onImageOutput = { image in
-                self.onImageOutput = nil
-                
-                continuation.resume(returning: _UncheckedSendable(image))
-            }
+            self.imageOutputHandlers.append({ image in
+                continuation.resume(returning: image)
+            })
         }
     }
 }
