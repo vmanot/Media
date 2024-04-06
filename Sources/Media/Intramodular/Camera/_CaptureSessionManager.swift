@@ -134,7 +134,6 @@ extension _CaptureSessionManager {
     }
 }
 
-
 #if os(iOS) || os(visionOS)
 extension CGImagePropertyOrientation {
     init(videoOrientation: AVCaptureVideoOrientation) {

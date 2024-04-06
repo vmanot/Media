@@ -9,7 +9,7 @@ import AVFoundation
 extension AVCaptureDevice {
     @MainActor
     public class Authorization {
-        init() {
+        public init() {
             #if canImport(UIKit)
             guard Bundle.main.object(forInfoDictionaryKey: "NSCameraUsageDescription") != nil else {
                 fatalError("NSCameraUsageDescription key must be present in the app's Info.plist to access the camera. This key should contain a message describing why the app needs access to the camera.")
