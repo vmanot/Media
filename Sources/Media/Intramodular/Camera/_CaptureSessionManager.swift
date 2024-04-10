@@ -15,6 +15,7 @@ import Swallow
 
 @MainActor
 class _CaptureSessionManager: NSObject {
+    var _representable: _CameraView
     weak var _representableView: AppKitOrUIKitView?
     
     private(set) var cameraIsReadyToUse = false
@@ -37,21 +38,22 @@ class _CaptureSessionManager: NSObject {
     private var imageOutputHandlers: [(AppKitOrUIKitImage) -> Void] = []
     private var snapshotImageOrientation = CGImagePropertyOrientation.upMirrored
     
-    init(previewView: AppKitOrUIKitView) {
-        self._representableView = previewView
+    init(representable: _CameraView, representableView: AppKitOrUIKitView) {
+        self._representable = representable
+        self._representableView = representableView
         
         super.init()
         
         Task { @MainActor in
-            try await prepare(previewView: previewView)
+            try await prepare(representableView)
         }
     }
     
     @MainActor
     func prepare(
-        previewView: AppKitOrUIKitView
+        _ view: AppKitOrUIKitView
     ) async throws {
-        self._representableView = previewView
+        self._representableView = view
         
         let accessGranted = await authorization.requestAccess()
         
@@ -84,6 +86,19 @@ class _CaptureSessionManager: NSObject {
     }
 }
 
+extension AVCaptureDevice.Position {
+    public init(_from position: CameraView._CameraPosition) {
+        switch position {
+            case .auto:
+                self = .unspecified
+            case .back:
+                self = .back
+            case .front:
+                self = .front
+        }
+    }
+}
+
 extension _CaptureSessionManager {
     private func configureCaptureSession() {
         guard let previewView = _representableView else {
@@ -92,7 +107,13 @@ extension _CaptureSessionManager {
             return
         }
         
-        guard let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front) ?? AVCaptureDevice.default(for: .video) else {
+        guard let camera = AVCaptureDevice.default(
+            .builtInWideAngleCamera,
+            for: .video,
+            position: AVCaptureDevice.Position(
+                _from: _representable.configuration.cameraPosition
+            )
+        ) ?? AVCaptureDevice.default(for: .video) else {
             #if targetEnvironment(simulator)
             runtimeIssue("This cannot be tested on an iOS simulator.")
             #endif
@@ -102,6 +123,7 @@ extension _CaptureSessionManager {
         
         do {
             let cameraInput = try AVCaptureDeviceInput(device: camera)
+            
             session.addInput(cameraInput)
         } catch {
             assertionFailure()
@@ -122,15 +144,24 @@ extension _CaptureSessionManager {
         #endif
         
         let previewLayer = AVCaptureVideoPreviewLayer(session: session)
-        
-        previewLayer.connection?.automaticallyAdjustsVideoMirroring = false
-        previewLayer.connection?.isVideoMirrored = true
-        
+                
         previewView._SwiftUIX_firstLayer = previewLayer
         
         self.previewLayer = previewLayer
         
         start()
+    }
+    
+    func representableWillUpdate() {        
+        if let isMirrored = _representable.configuration.isMirrored {
+            previewLayer?.connection?._assignIfNotEqual(isMirrored, to: \.isVideoMirrored)
+        } else {
+            previewLayer?.connection?._assignIfNotEqual(true, to: \.automaticallyAdjustsVideoMirroring)
+        }
+    }
+    
+    func representableDidUpdate() {
+        
     }
 }
 

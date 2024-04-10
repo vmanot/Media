@@ -7,6 +7,8 @@ import SwiftUIZ
 
 #if os(iOS) || os(macOS)
 struct _CameraView: AppKitOrUIKitViewRepresentable {
+    let configuration: _CameraViewConfiguration
+    
     @Binding var _proxy: CameraViewProxy
     
     func makeAppKitOrUIKitView(context: Context) -> AppKitOrUIKitViewType {
@@ -16,6 +18,12 @@ struct _CameraView: AppKitOrUIKitViewRepresentable {
     }
     
     func updateAppKitOrUIKitView(_ view: AppKitOrUIKitViewType, context: Context) {
+        if view.captureSessionManager == nil {
+            view.captureSessionManager = .init(representable: self, representableView: view)
+        } else {
+            view.captureSessionManager._representable = self 
+        }
+        
         _proxy.base = view.captureSessionManager
     }
 }
@@ -23,7 +31,7 @@ struct _CameraView: AppKitOrUIKitViewRepresentable {
 #if os(iOS)
 extension _CameraView {
     class AppKitOrUIKitViewType: AppKitOrUIKitView {
-        lazy var captureSessionManager = _CaptureSessionManager(previewView: self)
+        var captureSessionManager: _CaptureSessionManager!
         
         override func didMoveToWindow() {
             super.didMoveToWindow()
@@ -41,18 +49,18 @@ extension _CameraView {
 #elseif os(macOS)
 extension _CameraView {
     class AppKitOrUIKitViewType: AppKitOrUIKitView {
-        lazy var captureSession = _CaptureSessionManager(previewView: self)
+        var captureSessionManager: _CaptureSessionManager!
         
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
             
-            captureSession.start()
+            captureSessionManager.start()
         }
         
         override func layout() {
             super.layout()
             
-            captureSession._representableView?.frame = bounds
+            captureSessionManager._representableView?.frame = bounds
         }
     }
 }
