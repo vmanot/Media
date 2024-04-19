@@ -11,12 +11,15 @@ import SwiftUIX
 
 /// A sane, modern replacement for `AVAudioRecorder`.
 public final class AudioRecorder: NSObject, ObservableObject {
-    public enum State {
+    public enum State: Hashable {
         case unprepared
+        case preparing
         case prepared
         case recording
         case paused
         case stopped
+        case finished
+        case failed(AnyError?)
     }
     
     private var _base: AVAudioRecorder?
@@ -26,16 +29,16 @@ public final class AudioRecorder: NSObject, ObservableObject {
             try _base.unwrap()
         }
     }
-    
-    private var recordingLocationURL: URL?
+        
+    private var temporaryAssetURL: URL?
     
     public private(set) var recording: MediaAssetLocation?
+    
+    @Published public private(set) var state: State
     
     public override init() {
         state = .unprepared
     }
-    
-    @Published public private(set) var state: State
     
     public var normalizedPowerLevel: Float {
         guard let base = _base else {
@@ -60,22 +63,37 @@ public final class AudioRecorder: NSObject, ObservableObject {
     }
     
     deinit {
-        if let recordingLocationURL = recordingLocationURL {
-            do {
-                try FileManager.default.removeItem(at: recordingLocationURL)
-            } catch {
-                fatalError()
+
+    }
+    
+    /// Returns a new URL for the temporary file.
+    private func temporaryFileURL() -> URL {
+        let newURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".m4a")
+
+        if let temporaryAssetURL = temporaryAssetURL {
+            if FileManager.default.fileExists(at: temporaryAssetURL) {
+                do {
+                    try FileManager.default.removeItem(at: temporaryAssetURL)
+                } catch {
+                    runtimeIssue(error)
+                }
             }
         }
+        
+        self.temporaryAssetURL = newURL
+        
+        return newURL
     }
 }
 
 extension AudioRecorder {
     @MainActor
     public func prepare() async throws {
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".m4a")
-        
-        recording = .init(url)
+        guard state != .prepared else {
+            return
+        }
+                
+        recording = MediaAssetLocation(temporaryFileURL())
         
         self._base = try AVAudioRecorder(url: url, settings: [
             AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
@@ -86,6 +104,11 @@ extension AudioRecorder {
         
         try base.delegate = self
         try base.isMeteringEnabled = true
+        
+        self.state = .preparing
+        
+        await Task.yield()
+        
         try base.prepareToRecord()
         
         self.state = .prepared
@@ -93,11 +116,26 @@ extension AudioRecorder {
     
     @MainActor
     public func record() async throws {
+        switch state {
+            case .unprepared, .preparing:
+                try await prepare()
+            default:
+                break
+        }
+        
         try _AVAudioSession.shared.setCategory(.record, mode: .default)
         try _AVAudioSession.shared.setActive(true)
         
-        guard try base.record() else {
-            throw _PlaceholderError()
+        do {
+            try base.record()
+        } catch {
+            do {
+                try base.prepareToRecord()
+                try await Task.sleep(.milliseconds(100))
+                try base.record()
+            } catch {
+                throw _PlaceholderError()
+            }
         }
         
         self.state = .recording
@@ -114,11 +152,19 @@ extension AudioRecorder {
     @MainActor
     public func stop() async throws -> MediaAssetLocation {
         try _AVAudioSession.shared.setActive(false)
-
-        try self.base.stop()
+        
+        do {
+            try self.base.stop()
+        } catch {
+            do {
+                try self.base.stop()
+            } catch {
+                throw error
+            }
+        }
         
         let audio = try self.recording.unwrap()
-
+        
         let result = MediaAssetLocation.data(
             try audio.data(),
             fileTypeHint: audio.fileTypeHint
@@ -126,20 +172,22 @@ extension AudioRecorder {
         
         self.recording = result
         
-        self.state = .stopped
+        self.state = .unprepared
+        
+        try await prepare()
         
         return result
     }
     
     public func toggleRecordPause() async throws {
         switch state {
-            case .unprepared, .prepared:
+            case .unprepared, .prepared, .preparing:
                 return try await record()
             case .recording:
                 return try await pause()
             case .paused:
                 return try await record()
-            case .stopped:
+            case .stopped, .finished, .failed:
                 return try await record()
         }
     }
@@ -152,27 +200,39 @@ extension AudioRecorder: AVAudioRecorderDelegate {
         _ recorder: AVAudioRecorder,
         successfully flag: Bool
     ) {
-        
+        Task { @MainActor in
+            if flag {
+                state = .finished
+            } else {
+                state = .failed(nil)
+            }
+        }
     }
     
     public func audioRecorderEncodeErrorDidOccur(
         _ recorder: AVAudioRecorder,
         error: Error?
     ) {
-        
+        Task { @MainActor in
+            state = .failed(error.map({ AnyError(erasing: $0) }))
+        }
     }
     
     public func audioRecorderBeginInterruption(
         _ recorder: AVAudioRecorder
     ) {
-        
+        Task { @MainActor in
+            state = .stopped
+        }
     }
     
     public func audioRecorderEndInterruption(
         _ recorder: AVAudioRecorder,
         withOptions flags: Int
     ) {
-        
+        Task { @MainActor in
+            state = .recording
+        }
     }
 }
 
