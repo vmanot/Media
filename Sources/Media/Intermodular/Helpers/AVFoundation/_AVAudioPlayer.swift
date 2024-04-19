@@ -5,6 +5,7 @@
 #if canImport(AVFoundation)
 
 import AVFoundation
+import Swallow
 
 class _AVAudioPlayer: NSObject, AVAudioPlayerDelegate {
     let asset: MediaAssetLocation
@@ -38,13 +39,25 @@ class _AVAudioPlayer: NSObject, AVAudioPlayerDelegate {
         do {
             let player = try AVAudioPlayer(from: asset)
             
-            player.prepareToPlay()
+            if let assetURL = asset.url {
+                try _tryAssert(FileManager.default.fileExists(at: assetURL))
+            }
+            
             player.delegate = self
             
             if let volume {
                 player.volume = Float(volume)
             }
             
+            if !player.prepareToPlay() {
+                try _AVAudioSession.shared.setCategory(.playback, mode: .default)
+                try _AVAudioSession.shared.setActive(true)
+                
+                if !player.prepareToPlay() {
+                    runtimeIssue("Failed to prepare \(player) for playing audio.")
+                }
+            }
+
             player.play()
             
             self.player = player

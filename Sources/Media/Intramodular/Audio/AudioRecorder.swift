@@ -29,12 +29,13 @@ public final class AudioRecorder: NSObject, ObservableObject {
             try _base.unwrap()
         }
     }
-        
+    
     private var temporaryAssetURL: URL?
     
     public private(set) var recording: MediaAssetLocation?
     
     @Published public private(set) var state: State
+    @Published public private(set) var qualityLevel: AVAudioRecorder.QualityLevel = .best
     
     public override init() {
         state = .unprepared
@@ -63,13 +64,13 @@ public final class AudioRecorder: NSObject, ObservableObject {
     }
     
     deinit {
-
+        
     }
     
     /// Returns a new URL for the temporary file.
     private func temporaryFileURL() -> URL {
-        let newURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".m4a")
-
+        let newURL = MediaAssetLocation.temporaryForRecording().url!
+        
         if let temporaryAssetURL = temporaryAssetURL {
             if FileManager.default.fileExists(at: temporaryAssetURL) {
                 do {
@@ -87,22 +88,47 @@ public final class AudioRecorder: NSObject, ObservableObject {
 }
 
 extension AudioRecorder {
+    private func requestPermission() async throws -> Bool {
+#if os(macOS)
+        return true
+#else
+        await withUnsafeContinuation { (continuation: UnsafeContinuation<Bool, Never>) in
+            switch AVAudioSession.sharedInstance().recordPermission {
+                case AVAudioSession.RecordPermission.granted:
+                    continuation.resume(returning: true)
+                case AVAudioSession.RecordPermission.denied:
+                    continuation.resume(returning: false)
+                case AVAudioSession.RecordPermission.undetermined:
+                    AVAudioSession.sharedInstance().requestRecordPermission { granted in
+                        continuation.resume(returning: granted)
+                    }
+                @unknown default:
+                    continuation.resume(returning: false)
+            }
+        }
+#endif
+    }
+    
     @MainActor
     public func prepare() async throws {
         guard state != .prepared else {
             return
         }
-                
+        
+        let permitted = try await requestPermission()
+        
+        try _tryAssert(permitted)
+        
         let url = temporaryFileURL()
         
         recording = MediaAssetLocation(url)
         
-        self._base = try AVAudioRecorder(url: url, settings: [
-            AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
-            AVSampleRateKey: 12000,
-            AVNumberOfChannelsKey: 1,
-            AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
-        ])
+        assert(!FileManager.default.fileExists(at: url))
+        
+        self._base = try AVAudioRecorder(
+            url: url,
+            settings: AVAudioRecorder.settings(for: self.qualityLevel)
+        )
         
         try base.delegate = self
         try base.isMeteringEnabled = true
@@ -111,7 +137,28 @@ extension AudioRecorder {
         
         await Task.yield()
         
-        try base.prepareToRecord()
+        let prepared = try await Task.detached(priority: .userInitiated) { () -> Bool in
+            do {
+                return try self.base.prepareToRecord()
+            } catch {
+                #if !os(macOS)
+                _ = try? _AVAudioSession.shared.enableBuiltInMicIfPossible()
+                #endif
+                
+                do {
+                    try _AVAudioSession.shared.setCategory(.record, mode: .default)
+                    try _AVAudioSession.shared.setActive(true)
+                } catch {
+                    runtimeIssue(error)
+                }
+                
+                return try self.base.prepareToRecord()
+            }
+        }.value
+        
+        guard prepared else {
+            throw _PlaceholderError()
+        }
         
         self.state = .prepared
     }
@@ -119,13 +166,13 @@ extension AudioRecorder {
     @MainActor
     public func record() async throws {
         switch state {
-            case .unprepared, .preparing:
+            case .unprepared, .stopped, .finished, .failed:
                 try await prepare()
             default:
                 break
         }
         
-        try _AVAudioSession.shared.setCategory(.record, mode: .default)
+        try _AVAudioSession.shared.setCategory(.playAndRecord, mode: .default)
         try _AVAudioSession.shared.setActive(true)
         
         do {
@@ -166,18 +213,17 @@ extension AudioRecorder {
         }
         
         let audio = try self.recording.unwrap()
+        let recordingData: Data = try audio.data()
         
         let result = MediaAssetLocation.data(
-            try audio.data(),
+            recordingData,
             fileTypeHint: audio.fileTypeHint
         )
         
         self.recording = result
         
-        self.state = .unprepared
-        
-        try await prepare()
-        
+        self.state = .stopped
+            
         return result
     }
     
@@ -223,18 +269,14 @@ extension AudioRecorder: AVAudioRecorderDelegate {
     public func audioRecorderBeginInterruption(
         _ recorder: AVAudioRecorder
     ) {
-        Task { @MainActor in
-            state = .stopped
-        }
+        
     }
     
     public func audioRecorderEndInterruption(
         _ recorder: AVAudioRecorder,
         withOptions flags: Int
     ) {
-        Task { @MainActor in
-            state = .recording
-        }
+        
     }
 }
 

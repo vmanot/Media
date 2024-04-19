@@ -12,6 +12,14 @@ public enum MediaAssetLocation: Hashable {
     case data(Data, fileTypeHint: String?)
     case url(URL)
     
+    public var url: URL? {
+        guard case .url(let result) = self else {
+            return nil
+        }
+        
+        return result
+    }
+    
     public init(
         _ data: Data,
         fileTypeHint: String? = nil
@@ -75,6 +83,20 @@ extension MediaAssetLocation {
         }
     }
 }
+
+#if !targetEnvironment(simulator)
+extension MediaAssetLocation {
+    public static func temporaryForRecording() -> Self {
+        .url(FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".m4a"))
+    }
+}
+#else
+extension MediaAssetLocation {
+    public static func temporaryForRecording() -> Self {
+        .url(FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".caf"))
+    }
+}
+#endif
 
 #if os(iOS) || os(macOS) || os(tvOS) || os(visionOS)
 extension AVPlayer {

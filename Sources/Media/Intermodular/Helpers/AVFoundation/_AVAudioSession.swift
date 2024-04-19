@@ -6,11 +6,74 @@ import AVFoundation
 import Swift
 
 #if os(iOS) || os(tvOS) || os(visionOS)
-public struct _AVAudioSession {
+public final class _AVAudioSession: ObservableObject {
+    public static let shared: _AVAudioSession = _AVAudioSession(base: .sharedInstance())
+    
     private let base: AVAudioSession
     
-    public static var shared: Self {
-        .init(base: .sharedInstance())
+    private init(base: AVAudioSession) {
+        self.base = base
+    }
+    
+    public func enableBuiltInMicIfPossible() throws {
+        guard let availableInputs = base.availableInputs, let builtInMicInput = availableInputs.first(where: { $0.portType == .builtInMic }) else {
+            return
+        }
+        
+        try base.setPreferredInput(builtInMicInput)
+    }
+        
+    public func setupNotifications() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAudioSessionInterruption),
+            name: AVAudioSession.interruptionNotification,
+            object: base
+        )
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAudioSessionRouteChange),
+            name: AVAudioSession.routeChangeNotification,
+            object: base
+        )
+    }
+    
+    @objc private func handleAudioSessionInterruption(
+        notification: Notification
+    ) {
+        guard let userInfo = notification.userInfo,
+              let typeValue = userInfo[AVAudioSessionInterruptionTypeKey] as? UInt,
+              let type = AVAudioSession.InterruptionType(rawValue: typeValue) else {
+            return
+        }
+        
+        if type == .began {
+            objectWillChange.send()
+        } else if type == .ended {
+            if let optionsValue = userInfo[AVAudioSessionInterruptionOptionKey] as? UInt {
+                let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
+
+                if options.contains(.shouldResume) {
+                    objectWillChange.send()
+                }
+            }
+        }
+    }
+    
+    @objc private func handleAudioSessionRouteChange(notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let reasonValue = userInfo[AVAudioSessionRouteChangeReasonKey] as? UInt,
+              let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue) else {
+            return
+        }
+        
+        switch reason {
+            case .newDeviceAvailable, .oldDeviceUnavailable:
+                objectWillChange.send()
+            default:
+                break
+        }
     }
 }
 
