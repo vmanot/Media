@@ -93,7 +93,9 @@ extension AudioRecorder {
             return
         }
                 
-        recording = MediaAssetLocation(temporaryFileURL())
+        let url = temporaryFileURL()
+        
+        recording = MediaAssetLocation(url)
         
         self._base = try AVAudioRecorder(url: url, settings: [
             AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
