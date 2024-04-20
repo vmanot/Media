@@ -139,6 +139,8 @@ extension AudioRecorder {
         
         let prepared = try await Task.detached(priority: .userInitiated) { () -> Bool in
             do {
+                try _AVAudioSession.shared.setCategory(.record, mode: .default)
+                try _AVAudioSession.shared.setActive(true)
                 return try self.base.prepareToRecord()
             } catch {
                 #if !os(macOS)
@@ -172,9 +174,6 @@ extension AudioRecorder {
                 break
         }
         
-        try _AVAudioSession.shared.setCategory(.playAndRecord, mode: .default)
-        try _AVAudioSession.shared.setActive(true)
-        
         do {
             try base.record()
         } catch {
@@ -200,12 +199,13 @@ extension AudioRecorder {
     @discardableResult
     @MainActor
     public func stop() async throws -> MediaAssetLocation {
-        try _AVAudioSession.shared.setActive(false)
         
         do {
+            try _AVAudioSession.shared.setActive(false)
             try self.base.stop()
         } catch {
             do {
+                try _AVAudioSession.shared.setActive(false)
                 try self.base.stop()
             } catch {
                 throw error

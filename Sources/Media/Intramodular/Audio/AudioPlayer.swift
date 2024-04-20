@@ -12,8 +12,6 @@ import Swallow
 public final class AudioPlayer: ObservableObject, @unchecked Sendable {
     public let objectWillChange = _AsyncObjectWillChangePublisher()
     
-    private var shouldDeactivateAudioSession = true
-    private var didSetUp = false
     private var players: [_AVAudioPlayer] = []
     
     public var isPlaying: Bool {
@@ -29,33 +27,10 @@ public final class AudioPlayer: ObservableObject, @unchecked Sendable {
     }
     
     public init() {
-        _ = try? setUp()
-    }
-    
-    private func setUp() throws {
-        if didSetUp {
-            return
-        }
         
-        defer {
-            didSetUp = true
-        }
-        
-        let audioSession = _AVAudioSession.shared
-        
-        _expectNoThrow {
-            try audioSession.setCategory(.playback, mode: .default)
-            try audioSession.setActive(true)
-        }
-        
-        shouldDeactivateAudioSession = true
     }
     
     private func tearDown() throws {
-        guard shouldDeactivateAudioSession else {
-            return
-        }
-        
         try _AVAudioSession.shared.setActive(false)
     }
     
@@ -93,6 +68,9 @@ extension AudioPlayer {
     public func play(
         _ url: URL
     ) async throws {
+        let audioSession = _AVAudioSession.shared
+        try audioSession.setCategory(.playback, mode: .default)
+        try audioSession.setActive(true)
         try await play(.url(url))
     }
     
@@ -100,6 +78,9 @@ extension AudioPlayer {
         _ data: Data,
         fileTypeHint: String?
     ) async throws {
+        let audioSession = _AVAudioSession.shared
+        try audioSession.setCategory(.playback, mode: .default)
+        try audioSession.setActive(true)
         try await play(.data(data, fileTypeHint: fileTypeHint))
     }
 }
