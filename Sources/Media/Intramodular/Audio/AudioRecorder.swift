@@ -199,12 +199,13 @@ extension AudioRecorder {
     @discardableResult
     @MainActor
     public func stop() async throws -> MediaAssetLocation {
-        try _AVAudioSession.shared.setActive(false)
         
         do {
+            try _AVAudioSession.shared.setActive(false)
             try self.base.stop()
         } catch {
             do {
+                try _AVAudioSession.shared.setActive(false)
                 try self.base.stop()
             } catch {
                 throw error
