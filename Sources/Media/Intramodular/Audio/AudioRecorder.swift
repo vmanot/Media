@@ -139,6 +139,8 @@ extension AudioRecorder {
         
         let prepared = try await Task.detached(priority: .userInitiated) { () -> Bool in
             do {
+                try _AVAudioSession.shared.setCategory(.record, mode: .default)
+                try _AVAudioSession.shared.setActive(true)
                 return try self.base.prepareToRecord()
             } catch {
                 #if !os(macOS)
@@ -171,9 +173,6 @@ extension AudioRecorder {
             default:
                 break
         }
-        
-        try _AVAudioSession.shared.setCategory(.playAndRecord, mode: .default)
-        try _AVAudioSession.shared.setActive(true)
         
         do {
             try base.record()
