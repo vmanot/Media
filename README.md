@@ -20,7 +20,7 @@ A framework to work with audio and camera capture in Swift.
 + import Media
 ```
 
-### Embed the CameraView
+### Display a camera view in SwiftUI 
 
 ```swift
 import SwiftUI
@@ -31,7 +31,6 @@ struct MyCameraView: View {
     
     var body: some View {
         CameraViewReader { (cameraProxy: CameraViewProxy) in
-            
             CameraView(camera: .back, mirrored: false)
                 .safeAreaInset(edge: .bottom) {
                     captureButton(camera: cameraProxy) { image in
@@ -43,7 +42,6 @@ struct MyCameraView: View {
     
     @ViewBuilder
     private func captureButton(camera: CameraViewProxy, onCapture: @escaping (UIImage) -> Void) -> some View {
-        
         Button {
             Task { @MainActor in
                 let image: UIImage = try! await camera.capturePhoto()
@@ -64,14 +62,13 @@ struct MyCameraView: View {
 }
 ```
 
-### Play Audio
+### Play audio from a file
 
 ```swift
 import Foundation
 import Media
 
 struct MyAudioTask {
-    
     @MainActor
     func playAudio(forFile fileURL: URL) {
         Task {
