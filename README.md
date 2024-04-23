@@ -1,6 +1,6 @@
 # Media
 
-Easily work with Camera Capture in Swift 
+A framework to work with audio and camera capture in Swift. 
 
 # Installation
 
