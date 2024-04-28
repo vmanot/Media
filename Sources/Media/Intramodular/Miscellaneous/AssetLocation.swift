@@ -98,6 +98,8 @@ extension MediaAssetLocation {
 }
 #endif
 
+// MARK: - Supplementary
+
 #if os(iOS) || os(macOS) || os(tvOS) || os(visionOS)
 extension AVPlayer {
     public convenience init(from location: MediaAssetLocation) throws {
