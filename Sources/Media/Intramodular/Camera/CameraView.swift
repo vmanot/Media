@@ -25,7 +25,7 @@ public struct CameraView: View {
     }
     
     public init(
-        camera: _CameraPosition,
+        camera: _CameraPosition = .auto,
         mirrored: Bool? = nil
     ) {
         self.explicitConfiguration.cameraPosition = camera

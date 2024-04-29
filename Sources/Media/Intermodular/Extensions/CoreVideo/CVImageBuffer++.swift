@@ -33,14 +33,4 @@ extension CVImageBuffer {
     }
 }
 
-extension Image {
-    public init?(cvImage image: CVImageBuffer) {
-        guard let image: AppKitOrUIKitImage = image._appKitOrUIKitImage else {
-            return nil
-        }
-        
-        self.init(image: image)
-    }
-}
-
 #endif
