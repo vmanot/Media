@@ -38,28 +38,23 @@ public struct CameraView: View {
             .id(resolvedConfiguration.cameraPosition)
     }
 }
-#endif
 
+extension CameraView {
+    public func processingFrameRate(
+        _ frameRate: _CameraViewConfiguration.FrameRate
+    ) -> Self {
+        then {
+            $0.explicitConfiguration.processingFrameRate = frameRate
+        }
+    }
+}
+#endif
 
 extension CameraView {
     public enum _CameraPosition: Hashable, Sendable {
         case front
         case back
         case auto
-    }
-}
-
-public struct _CameraViewConfiguration: Initiable, MergeOperatable {
-    public var cameraPosition: CameraView._CameraPosition = .auto
-    public var isMirrored: Bool?
-    
-    public init() {
-        
-    }
-    
-    public mutating func mergeInPlace(with other: _CameraViewConfiguration) {
-        self.cameraPosition = other.cameraPosition
-        self.isMirrored = other.isMirrored ?? self.isMirrored
     }
 }
 

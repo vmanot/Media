@@ -19,7 +19,7 @@ struct _CameraView: AppKitOrUIKitViewRepresentable {
     
     func updateAppKitOrUIKitView(_ view: AppKitOrUIKitViewType, context: Context) {
         if view.captureSessionManager == nil {
-            view.captureSessionManager = .init(representable: self, representableView: view)
+            view.captureSessionManager = _CaptureSessionManager(representable: self, representableView: view)
         } else {
             view.captureSessionManager._representable = self 
         }
