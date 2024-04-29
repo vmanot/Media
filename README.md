@@ -64,27 +64,38 @@ struct MyCameraView: View {
 
 ### Play audio from a file
 
+Play audio using `AudioPlayer`.
+
 ```swift
-import Foundation
 import Media
 
 struct MyAudioTask {
     @MainActor
     func playAudio(forFile fileURL: URL) {
         Task {
+            // This line will suspend until the audio has finished playing!
             try await AudioPlayer().play(.url(fileURL))
         }
     }
 }
 ```
 
-### Record Audio
+### Record audio 
+
+Record audio using `AudioRecorder`.
 
 ```swift
+import Media
+
+class MyClass {
+    // ... the rest of your code
+
+    @MainActor
+    let recorder = AudioRecorder()
+
     @MainActor
     func startRecording() async {
         do {
-            try await recorder.prepare()
             try await recorder.record()
         } catch {
             print(error)
@@ -99,12 +110,15 @@ struct MyAudioTask {
             print(error)
         }
     }
+
+    // ... the rest of your code
+}
 ```
 
 ### Convert audio file format
 
 ```swift
-let wavFileURL: URL = try await MediaAssetLocation.url(url).convert(to: .wav)
+let wavFileURL: URL = try await MediaAssetLocation.url(myOriginalFileURL).convert(to: .wav)
 ```
 
 # License
