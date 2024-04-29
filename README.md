@@ -1,6 +1,6 @@
 # Media
 
-A framework to work with audio and camera capture in Swift. 
+**Media** makes it stupid simple to work with media capture & playback in Swift. 
 
 # Installation
 
@@ -106,3 +106,7 @@ struct MyAudioTask {
 ```swift
 let wavFileURL: URL = try await MediaAssetLocation.url(url).convert(to: .wav)
 ```
+
+# License
+
+**Media** is licensed under the MIT License.
