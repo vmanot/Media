@@ -1,6 +1,6 @@
 # Media
 
-A framework to work with audio and camera capture in Swift. 
+**Media** makes it stupid simple to work with media capture & playback in Swift. 
 
 # Installation
 
@@ -64,16 +64,63 @@ struct MyCameraView: View {
 
 ### Play audio from a file
 
+Play audio using `AudioPlayer`.
+
 ```swift
-import Foundation
 import Media
 
 struct MyAudioTask {
     @MainActor
     func playAudio(forFile fileURL: URL) {
         Task {
+            // This line will suspend until the audio has finished playing!
             try await AudioPlayer().play(.url(fileURL))
         }
     }
 }
 ```
+
+### Record audio 
+
+Record audio using `AudioRecorder`.
+
+```swift
+import Media
+
+class MyClass {
+    // ... the rest of your code
+
+    @MainActor
+    let recorder = AudioRecorder()
+
+    @MainActor
+    func startRecording() async {
+        do {
+            try await recorder.record()
+        } catch {
+            print(error)
+        }
+    }
+
+    @MainActor
+    func stopRecording() async {
+        do {
+            try await recorder.stop()
+        } catch {
+            print(error)
+        }
+    }
+
+    // ... the rest of your code
+}
+```
+
+### Convert audio file format
+
+```swift
+let wavFileURL: URL = try await MediaAssetLocation.url(myOriginalFileURL).convert(to: .wav)
+```
+
+# License
+
+**Media** is licensed under the MIT License.
