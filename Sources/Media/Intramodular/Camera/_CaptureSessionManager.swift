@@ -32,7 +32,6 @@ public class _CaptureSessionManager: NSObject {
     private(set) var cameraIsReadyToUse = false
     
     private let session = AVCaptureSession()
-    
     private weak var previewLayer: AVCaptureVideoPreviewLayer?
     private lazy var capturePhotoOutput = AVCapturePhotoOutput()
     
@@ -54,7 +53,7 @@ public class _CaptureSessionManager: NSObject {
     
     public lazy var _outputSampleBufferPublisher: AnyPublisher<CMSampleBuffer, Never> = _outputSampleBufferSubject.autoconnect().eraseToAnyPublisher()
     public lazy var _outputImageBufferPublisher: AnyPublisher<CVImageBuffer, Never> = _outputImageBufferSubject.autoconnect().eraseToAnyPublisher()
-
+    
     init(representable: _CameraView, representableView: AppKitOrUIKitView) {
         self._representable = representable
         self._representableView = representableView
@@ -107,19 +106,6 @@ public class _CaptureSessionManager: NSObject {
     }
 }
 
-extension AVCaptureDevice.Position {
-    public init(_from position: CameraView._CameraPosition) {
-        switch position {
-            case .auto:
-                self = .unspecified
-            case .back:
-                self = .back
-            case .front:
-                self = .front
-        }
-    }
-}
-
 extension _CaptureSessionManager {
     func representableWillUpdate() {
         if let isMirrored = _representable.configuration.isMirrored {
@@ -132,7 +118,7 @@ extension _CaptureSessionManager {
     func representableDidUpdate() {
         
     }
-
+    
     private func configureCaptureSession() {
         _configureAVCaptureSession()
         _setUpAVCaptureVideoPreviewLayer()
@@ -198,7 +184,7 @@ extension _CaptureSessionManager {
             
             return
         }
-
+        
         let previewLayer = AVCaptureVideoPreviewLayer(session: session)
         
         previewView._SwiftUIX_firstLayer = previewLayer
@@ -253,20 +239,20 @@ extension _CaptureSessionManager: AVCapturePhotoCaptureDelegate, AVCaptureVideoD
         guard !imageOutputHandlers.isEmpty else {
             return
         }
-
+        
         let snapshotImageOrientation: CGImagePropertyOrientation
 #if os(iOS) || os(visionOS)
         snapshotImageOrientation = self.snapshotImageOrientation
 #else
         snapshotImageOrientation = self.snapshotImageOrientation
 #endif
-                
+        
         guard let outputImage = AppKitOrUIKitImage(
             sampleBuffer: sampleBuffer,
             orientation: snapshotImageOrientation
         ) else {
             runtimeIssue("Failed to output image.")
-                        
+            
             return
         }
         
@@ -278,19 +264,18 @@ extension _CaptureSessionManager: AVCapturePhotoCaptureDelegate, AVCaptureVideoD
             imageOutputHandlers.removeAll()
         }
     }
-        
+    
     private func _withThrottledProcessingFrameRate(
         forOutput sampleBuffer: CMSampleBuffer,
         _ operation: (CMTime) -> Void
     ) {
         let timestamp: CMTime = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
-
+        
         if let processingFrameRate = _representable.configuration.processingFrameRate {
             let deltaTime = timestamp - state.lastTimestamp
-            // Only process the frame if the time elapsed since the last processed frame is greater than or equal to the desired frame interval
             if deltaTime >= CMTimeMake(value: 1, timescale: Int32(processingFrameRate.doubleValue)) {
-                state.lastTimestamp = timestamp  // Update lastTimestamp only when processing a frame
-
+                state.lastTimestamp = timestamp
+                
                 operation(timestamp)
             }
         } else {

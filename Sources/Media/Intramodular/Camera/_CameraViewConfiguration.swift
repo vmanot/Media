@@ -7,7 +7,7 @@ import Swallow
 import SwiftUI
 
 public struct _CameraViewConfiguration: Hashable, Initiable, MergeOperatable {
-    public var cameraPosition: CameraView._CameraPosition = .auto
+    public var cameraPosition: CameraPosition = .auto
     public var isMirrored: Bool?
     public var processingFrameRate: FrameRate?
 
@@ -23,6 +23,12 @@ public struct _CameraViewConfiguration: Hashable, Initiable, MergeOperatable {
 }
 
 extension _CameraViewConfiguration {
+    public enum CameraPosition: Hashable, Sendable {
+        case front
+        case back
+        case auto
+    }
+
     public enum FrameRate: String, Codable, Hashable, Sendable {
         case fps1
         case fps15

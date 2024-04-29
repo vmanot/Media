@@ -10,6 +10,8 @@
 ///
 /// You can interact with this view using `CameraViewReader` (similar to how you can interact with `ScrollView` using a `ScrollViewReader`).
 public struct CameraView: View {
+    public typealias CameraPosition = _CameraViewConfiguration.CameraPosition
+    
     @Environment(\._cameraViewConfiguration) var inheritedConfiguration
     
     public var explicitConfiguration = _CameraViewConfiguration()
@@ -25,7 +27,7 @@ public struct CameraView: View {
     }
     
     public init(
-        camera: _CameraPosition = .auto,
+        camera: _CameraViewConfiguration.CameraPosition = .auto,
         mirrored: Bool? = nil
     ) {
         self.explicitConfiguration.cameraPosition = camera
@@ -49,14 +51,6 @@ extension CameraView {
     }
 }
 #endif
-
-extension CameraView {
-    public enum _CameraPosition: Hashable, Sendable {
-        case front
-        case back
-        case auto
-    }
-}
 
 extension EnvironmentValues {
     public var _cameraViewConfiguration: _CameraViewConfiguration {
