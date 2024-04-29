@@ -10,7 +10,9 @@ public struct _CameraViewConfiguration: Hashable, Initiable, MergeOperatable {
     public var cameraPosition: CameraPosition = .auto
     public var isMirrored: Bool?
     public var processingFrameRate: FrameRate?
-
+    public var aspectRatio: CGFloat?
+    public var contentMode: ContentMode?
+    
     public init() {
         
     }
@@ -19,6 +21,8 @@ public struct _CameraViewConfiguration: Hashable, Initiable, MergeOperatable {
         self.cameraPosition = other.cameraPosition
         self.isMirrored = other.isMirrored ?? self.isMirrored
         self.processingFrameRate = other.processingFrameRate ?? self.processingFrameRate
+        self.aspectRatio = other.aspectRatio ?? self.aspectRatio
+        self.contentMode = other.contentMode ?? self.contentMode
     }
 }
 

@@ -28,10 +28,8 @@ public class _CaptureSessionManager: NSObject {
     var state: State = nil
     var _representable: _CameraView
     weak var _representableView: AppKitOrUIKitView?
-    
-    private(set) var cameraIsReadyToUse = false
-    
-    private let session = AVCaptureSession()
+        
+    private let _avCaptureSession = AVCaptureSession()
     private weak var previewLayer: AVCaptureVideoPreviewLayer?
     private lazy var capturePhotoOutput = AVCapturePhotoOutput()
     
@@ -87,35 +85,43 @@ public class _CaptureSessionManager: NSObject {
     
     public func start() {
         state = nil
-        
-        guard cameraIsReadyToUse else {
-            return
-        }
-        
-        let session = self.session
+                
+        let captureSession = self._avCaptureSession
         
         DispatchQueue.global(qos: .userInitiated).async {
-            session.startRunning()
+            captureSession.startRunning()
         }
     }
     
     public func stop() {
-        session.stopRunning()
+        _avCaptureSession.stopRunning()
         
         state = nil
     }
 }
 
 extension _CaptureSessionManager {
-    func representableWillUpdate() {
-        if let isMirrored = _representable.configuration.isMirrored {
-            previewLayer?.connection?._assignIfNotEqual(isMirrored, to: \.isVideoMirrored)
-        } else {
-            previewLayer?.connection?._assignIfNotEqual(true, to: \.automaticallyAdjustsVideoMirroring)
+    func representableWillUpdate(context: some _AppKitOrUIKitViewRepresentableContext) {
+        if let previewLayer {
+            if let isMirrored = _representable.configuration.isMirrored {
+                previewLayer.connection?._assignIfNotEqual(false, to: \.automaticallyAdjustsVideoMirroring)
+                previewLayer.connection?._assignIfNotEqual(isMirrored, to: \.isVideoMirrored)
+            } else {
+                previewLayer.connection?._assignIfNotEqual(true, to: \.automaticallyAdjustsVideoMirroring)
+            }
+            
+            assert(_representable.configuration.aspectRatio == nil || _representable.configuration.aspectRatio == 1.0)
+            
+            let videoGravity = AVLayerVideoGravity(
+                aspectRatio: _representable.configuration.aspectRatio,
+                contentMode: _representable.configuration.contentMode
+            )
+            
+            previewLayer._assignIfNotEqual(videoGravity, to: \.videoGravity)
         }
     }
     
-    func representableDidUpdate() {
+    func representableDidUpdate(context: some _AppKitOrUIKitViewRepresentableContext) {
         
     }
     
@@ -127,26 +133,25 @@ extension _CaptureSessionManager {
     }
     
     private func _configureAVCaptureSession() {
-        guard let captureDevice: AVCaptureDevice = _makeAVCaptureDevice() else {
-            runtimeIssue("Failed to create an `AVCaptureDevice`.")
-            
-            return
-        }
-        
-        session.withConfigurationScope {
+        _avCaptureSession.withConfigurationScope {
+            guard let captureDevice: AVCaptureDevice = _makeAVCaptureDevice() else {
+                runtimeIssue("Failed to create an `AVCaptureDevice`.")
+                
+                return
+            }
+
             do {
                 let cameraInput = try AVCaptureDeviceInput(device: captureDevice)
                 
-                session.addInput(cameraInput)
+                _avCaptureSession.addInput(cameraInput)
             } catch {
                 assertionFailure()
                 
                 return
             }
-            
-            cameraIsReadyToUse = true
-            
+                        
             let videoOutput = AVCaptureVideoDataOutput()
+            
             videoOutput.setSampleBufferDelegate(self, queue: dataOutputQueue)
             videoOutput.videoSettings = [
                 kCVPixelBufferPixelFormatTypeKey: kCVPixelFormatType_32BGRA
@@ -156,12 +161,12 @@ extension _CaptureSessionManager {
             videoOutput.connection(with: .video)?.videoOrientation = .portrait
 #endif
             
-            session.addOutput(videoOutput)
+            _avCaptureSession.addOutput(videoOutput)
         }
     }
     
     private func _makeAVCaptureDevice() -> AVCaptureDevice? {
-        guard let camera = AVCaptureDevice.default(
+        guard let device = AVCaptureDevice.default(
             .builtInWideAngleCamera,
             for: .video,
             position: AVCaptureDevice.Position(
@@ -175,7 +180,7 @@ extension _CaptureSessionManager {
             return nil
         }
         
-        return camera
+        return device
     }
     
     private func _setUpAVCaptureVideoPreviewLayer() {
@@ -185,27 +190,13 @@ extension _CaptureSessionManager {
             return
         }
         
-        let previewLayer = AVCaptureVideoPreviewLayer(session: session)
+        let previewLayer = AVCaptureVideoPreviewLayer(session: _avCaptureSession)
         
         previewView._SwiftUIX_firstLayer = previewLayer
         
         self.previewLayer = previewLayer
     }
 }
-
-#if os(iOS) || os(visionOS)
-extension CGImagePropertyOrientation {
-    init(videoOrientation: AVCaptureVideoOrientation) {
-        switch videoOrientation {
-            case .portrait: self = .right
-            case .portraitUpsideDown: self = .left
-            case .landscapeRight: self = .up
-            case .landscapeLeft: self = .down
-            @unknown default: self = .up
-        }
-    }
-}
-#endif
 
 extension _CaptureSessionManager: AVCapturePhotoCaptureDelegate, AVCaptureVideoDataOutputSampleBufferDelegate {
     public func captureOutput(
@@ -295,4 +286,39 @@ extension _CaptureSessionManager: _CameraViewProxyBase {
     }
 }
 
+// MARK: - Internal
+
+extension AVLayerVideoGravity {
+    fileprivate init(
+        aspectRatio: CGFloat?,
+        contentMode: SwiftUI.ContentMode?
+    ) {
+        switch (contentMode ?? .fit) {
+            case .fit:
+                self = .resizeAspect
+            case .fill:
+                if aspectRatio != nil {
+                    self = .resizeAspectFill
+                } else {
+                    self = .resize
+                }
+        }
+    }
+}
+
+#if os(iOS) || os(visionOS)
+extension CGImagePropertyOrientation {
+    init(videoOrientation: AVCaptureVideoOrientation) {
+        switch videoOrientation {
+            case .portrait: self = .right
+            case .portraitUpsideDown: self = .left
+            case .landscapeRight: self = .up
+            case .landscapeLeft: self = .down
+            @unknown default: self = .up
+        }
+    }
+}
 #endif
+
+#endif
+

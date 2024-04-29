@@ -49,6 +49,18 @@ extension CameraView {
             $0.explicitConfiguration.processingFrameRate = frameRate
         }
     }
+    
+    public func aspectRatio(
+        _ aspectRatio: CGFloat? = nil, 
+        contentMode: ContentMode
+    ) -> Self {
+        then {
+            assert(aspectRatio == nil || aspectRatio == 1.0, "Modifying the aspect ratio is currently unsupported.")
+
+            $0.explicitConfiguration.aspectRatio = aspectRatio
+            $0.explicitConfiguration.contentMode = contentMode
+        }
+    }
 }
 #endif
 
@@ -60,8 +72,4 @@ extension EnvironmentValues {
             self[_type: _SwiftUIX_Metatype(_CameraViewConfiguration.self)] = newValue
         }
     }
-}
-
-extension View {
-    
 }

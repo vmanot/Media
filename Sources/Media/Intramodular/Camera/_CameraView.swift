@@ -17,7 +17,10 @@ struct _CameraView: AppKitOrUIKitViewRepresentable {
         return view
     }
     
-    func updateAppKitOrUIKitView(_ view: AppKitOrUIKitViewType, context: Context) {
+    func updateAppKitOrUIKitView(
+        _ view: AppKitOrUIKitViewType,
+        context: Context
+    ) {
         if view.captureSessionManager == nil {
             view.captureSessionManager = _CaptureSessionManager(representable: self, representableView: view)
         } else {
@@ -25,6 +28,9 @@ struct _CameraView: AppKitOrUIKitViewRepresentable {
         }
         
         _proxy.base = view.captureSessionManager
+        
+        view.captureSessionManager.representableWillUpdate(context: context)
+        view.captureSessionManager.representableDidUpdate(context: context)
     }
 }
 
