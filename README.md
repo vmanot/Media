@@ -77,3 +77,32 @@ struct MyAudioTask {
     }
 }
 ```
+
+### Record Audio
+
+```swift
+    @MainActor
+    func startRecording() async {
+        do {
+            try await recorder.prepare()
+            try await recorder.record()
+        } catch {
+            print(error)
+        }
+    }
+
+    @MainActor
+    func stopRecording() async {
+        do {
+            try await recorder.stop()
+        } catch {
+            print(error)
+        }
+    }
+```
+
+### Convert Audio File Format
+
+```swift
+let wavFileURL: URL = try await MediaAssetLocation.url(url).convert(to: .wav)
+```
