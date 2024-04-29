@@ -101,7 +101,7 @@ struct MyAudioTask {
     }
 ```
 
-### Convert Audio File Format
+### Convert audio file format
 
 ```swift
 let wavFileURL: URL = try await MediaAssetLocation.url(url).convert(to: .wav)
