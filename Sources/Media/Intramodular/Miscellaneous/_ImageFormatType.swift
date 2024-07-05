@@ -2,7 +2,7 @@
 // Copyright (c) Vatsal Manot
 //
 
-import Foundation
+import FoundationX
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -13,34 +13,28 @@ public enum _ImageFormatType: CaseIterable {
     case heic
     case webp
     
-    public var mimeType: String {
+    var _mediaAssetFileType: _MediaAssetFileType {
         switch self {
             case .gif:
-                return "image/gif"
+                return .gif
             case .jpeg:
-                return "image/jpeg"
+                return .jpeg
             case .png:
-                return "image/png"
+                return .png
             case .heic:
-                return "image/heic"
+                return .heic
             case .webp:
-                return "image/webp"
+                return .webp
         }
     }
+}
+
+extension _ImageFormatType {
+    public var mimeType: String {
+        _mediaAssetFileType.mimeType
+    }
     
-    /// The uniform type identifier for the image type.
     public var uniformTypeIdentifier: UTType {
-        switch self {
-            case .gif:
-                return UTType("com.compuserve.gif")!
-            case .jpeg:
-                return UTType("public.jpeg")!
-            case .png:
-                return UTType("public.png")!
-            case .heic:
-                return UTType("public.heic")!
-            case .webp:
-                return UTType("public.webp")!
-        }
+        _mediaAssetFileType.utType
     }
 }
