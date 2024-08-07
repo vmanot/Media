@@ -22,7 +22,7 @@ struct _CameraView: AppKitOrUIKitViewRepresentable {
         context: Context
     ) {
         if view.captureSessionManager == nil {
-            view.captureSessionManager = _CaptureSessionManager(representable: self, representableView: view)
+            view.captureSessionManager = _CameraViewActor(representable: self, representableView: view)
         } else {
             view.captureSessionManager._representable = self 
         }
@@ -37,7 +37,7 @@ struct _CameraView: AppKitOrUIKitViewRepresentable {
 #if os(iOS)
 extension _CameraView {
     class AppKitOrUIKitViewType: AppKitOrUIKitView {
-        var captureSessionManager: _CaptureSessionManager!
+        var captureSessionManager: _CameraViewActor!
         
         override func didMoveToWindow() {
             super.didMoveToWindow()
@@ -55,7 +55,7 @@ extension _CameraView {
 #elseif os(macOS)
 extension _CameraView {
     class AppKitOrUIKitViewType: AppKitOrUIKitView {
-        var captureSessionManager: _CaptureSessionManager!
+        var captureSessionManager: _CameraViewActor!
         
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()

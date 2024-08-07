@@ -16,7 +16,7 @@ import Swallow
 @_spi(Internal) import SwiftUIX
 
 @MainActor
-public class _CaptureSessionManager: NSObject {
+public class _CameraViewActor: NSObject {
     public struct State: ExpressibleByNilLiteral {
         var lastTimestamp = CMTime()
         
@@ -100,7 +100,7 @@ public class _CaptureSessionManager: NSObject {
     }
 }
 
-extension _CaptureSessionManager {
+extension _CameraViewActor {
     func representableWillUpdate(context: some _AppKitOrUIKitViewRepresentableContext) {
         if let previewLayer {
             if let isMirrored = _representable.configuration.isMirrored {
@@ -198,7 +198,7 @@ extension _CaptureSessionManager {
     }
 }
 
-extension _CaptureSessionManager: AVCapturePhotoCaptureDelegate, AVCaptureVideoDataOutputSampleBufferDelegate {
+extension _CameraViewActor: AVCapturePhotoCaptureDelegate, AVCaptureVideoDataOutputSampleBufferDelegate {
     public func captureOutput(
         _ output: AVCaptureOutput,
         didOutput sampleBuffer: CMSampleBuffer,
@@ -275,7 +275,7 @@ extension _CaptureSessionManager: AVCapturePhotoCaptureDelegate, AVCaptureVideoD
     }
 }
 
-extension _CaptureSessionManager: _CameraViewProxyBase {
+extension _CameraViewActor: _CameraViewProxyBase {
     @MainActor
     func capturePhoto() async throws -> AppKitOrUIKitImage {
         return await withCheckedContinuation { continuation in
