@@ -15,7 +15,6 @@ import Merge
 import Swallow
 @_spi(Internal) import SwiftUIX
 
-@MainActor
 public class _CameraViewActor: NSObject {
     public struct State: ExpressibleByNilLiteral {
         var lastTimestamp = CMTime()
@@ -33,6 +32,7 @@ public class _CameraViewActor: NSObject {
     private weak var previewLayer: AVCaptureVideoPreviewLayer?
     private lazy var capturePhotoOutput = AVCapturePhotoOutput()
     
+    @MainActor
     private let authorization = AVCaptureDevice.Authorization.shared
     
     private lazy var dataOutputQueue = DispatchQueue(
@@ -42,7 +42,6 @@ public class _CameraViewActor: NSObject {
         autoreleaseFrequency: .workItem
     )
     
-    @MainActor
     private var imageOutputHandlers: [(AppKitOrUIKitImage) -> Void] = []
     private var snapshotImageOrientation = CGImagePropertyOrientation.upMirrored
     
@@ -232,11 +231,11 @@ extension _CameraViewActor: AVCapturePhotoCaptureDelegate, AVCaptureVideoDataOut
         }
         
         let snapshotImageOrientation: CGImagePropertyOrientation
-#if os(iOS) || os(visionOS)
+        #if os(iOS) || os(visionOS)
         snapshotImageOrientation = self.snapshotImageOrientation
-#else
+        #else
         snapshotImageOrientation = self.snapshotImageOrientation
-#endif
+        #endif
         
         guard let outputImage = AppKitOrUIKitImage(
             sampleBuffer: sampleBuffer,
