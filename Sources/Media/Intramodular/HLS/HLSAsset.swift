@@ -6,7 +6,6 @@ import AVFoundation
 import FoundationX
 import Merge
 
-@MainActor
 public class HLSAsset: ObservableObject {
     public enum State: Equatable {
         case notDownloaded
@@ -30,6 +29,7 @@ public class HLSAsset: ObservableObject {
     
     internal var resolvedMediaSelection: AVMediaSelection?
             
+    @MainActor
     internal init(
         asset: AVURLAsset,
         description: String
@@ -68,6 +68,7 @@ public class HLSAsset: ObservableObject {
     }
 }
 
+@MainActor
 extension HLSAsset {
     public func download() {
         HLSAssetDownloadManager.shared.download(self)

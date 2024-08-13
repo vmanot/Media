@@ -17,9 +17,11 @@ extension AVAsset {
         exportSession.outputURL = outputURL
         exportSession.outputFileType = try outputFormat._toAVFileType()
         
+        let _exportSession = _UncheckedSendable(exportSession)
+        
         return try await withUnsafeThrowingContinuation { continuation in
-            exportSession.exportAsynchronously {
-                switch exportSession.status {
+            _exportSession.wrappedValue.exportAsynchronously {
+                switch _exportSession.wrappedValue.status {
                     case .completed:
                         continuation.resume()
                     case .failed:

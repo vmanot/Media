@@ -39,9 +39,10 @@ extension CameraViewProxy {
         base?._outputImageBufferPublisher
     }
     
-    @MainActor(unsafe)
     public func capturePhoto() async throws -> AppKitOrUIKitImage {
-        try await base.unwrap().capturePhoto()
+        let result = try await base.unwrap().capturePhoto()
+
+        return result
     }
 }
 #endif
