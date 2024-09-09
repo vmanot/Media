@@ -20,7 +20,7 @@ public struct CameraView: View {
         inheritedConfiguration.mergingInPlace(with: explicitConfiguration)
     }
     
-    @ViewStorage private var _viewProxy = CameraViewProxy(base: nil)
+    @ViewStorage private var _viewBodyProxy = CameraViewProxy(base: nil)
     
     public init() {
         
@@ -35,8 +35,8 @@ public struct CameraView: View {
     }
     
     public var body: some View {
-        _CameraView(configuration: resolvedConfiguration, _proxy: $_viewProxy.binding)
-            ._provideViewProxy(_viewProxy)
+        _CameraView(configuration: resolvedConfiguration, _proxy: $_viewBodyProxy.binding)
+            ._provideViewProxy(_viewBodyProxy)
             .id(resolvedConfiguration.cameraPosition)
     }
 }
