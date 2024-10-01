@@ -32,7 +32,7 @@ extension _CameraViewConfiguration {
         case back
         case auto
     }
-
+    
     public enum FrameRate: String, Codable, Hashable, Sendable {
         case fps1
         case fps15

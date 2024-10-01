@@ -276,11 +276,11 @@ extension _CameraViewActor: AVCapturePhotoCaptureDelegate, AVCaptureVideoDataOut
 
 extension _CameraViewActor: _CameraViewProxyBase {
     @MainActor
-    func capturePhoto() async throws -> AppKitOrUIKitImage {
+    func capturePhoto() async throws -> _AnyImage {
         return await withCheckedContinuation { continuation in
-            self.imageOutputHandlers.append({ image in
-                continuation.resume(returning: image)
-            })
+            self.imageOutputHandlers.append { (image: AppKitOrUIKitImage) in
+                continuation.resume(returning: _AnyImage(image))
+            }
         }
     }
 }

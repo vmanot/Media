@@ -41,6 +41,8 @@ public struct CameraView: View {
     }
 }
 
+// MARK: - Modifiers
+
 extension CameraView {
     public func processingFrameRate(
         _ frameRate: _CameraViewConfiguration.FrameRate
@@ -64,8 +66,10 @@ extension CameraView {
 }
 #endif
 
+// MARK: - Internal
+
 extension EnvironmentValues {
-    public var _cameraViewConfiguration: _CameraViewConfiguration {
+    var _cameraViewConfiguration: _CameraViewConfiguration {
         get {
             self[_type: _SwiftUIX_Metatype(_CameraViewConfiguration.self)] ?? .init()
         } set {

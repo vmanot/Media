@@ -52,7 +52,7 @@ extension GIF.Data {
                 pasteboard.declareTypes([.fileNameType(forPathExtension: "gif")], owner: nil)
                 pasteboard.writeObjects([temporaryFileURL as NSURL])
             case .inlineData:
-                let pasteboardType = NSPasteboard.PasteboardType(rawValue: _ImageFormatType.gif.uniformTypeIdentifier.identifier)
+                let pasteboardType = NSPasteboard.PasteboardType(rawValue: ImageFileFormatType.gif.uniformTypeIdentifier.identifier)
                 
                 pasteboard.declareTypes([pasteboardType], owner: nil)
                 pasteboard.setData(rawValue, forType: pasteboardType)
