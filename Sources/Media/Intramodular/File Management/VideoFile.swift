@@ -5,6 +5,7 @@
 import AVFoundation
 import CorePersistence
 import Foundation
+import CoreTransferable
 
 public struct VideoFile: Identifiable, Hashable {
     public typealias ID = _TypeAssociatedID<Self, UUID>
@@ -16,6 +17,7 @@ public struct VideoFile: Identifiable, Hashable {
     public let duration: TimeInterval
     public let resolution: VideoFile.Resolution
     public let modelID: String?
+    public var metadata: [String : Any] = [:]
     
     public var durationFormatted: String {
         let minutes = Int(duration) / 60
@@ -54,8 +56,52 @@ public struct VideoFile: Identifiable, Hashable {
     }
 }
 
-extension VideoFile: Codable {
+extension VideoFile: Codable {}
+
+extension VideoFile: RawRepresentable {
+    public init?(rawValue: String) {
+        guard let data = rawValue.data(using: .utf8),
+              let result = try? JSONDecoder().decode(Self.self, from: data)
+        else {
+            return nil
+        }
+        self = result
+    }
     
+    public var rawValue: String {
+        guard let data = try? JSONEncoder().encode(self),
+              let result = String(data: data, encoding: .utf8)
+        else {
+            return "[]"
+        }
+        return result
+    }
+}
+
+extension VideoFile: Transferable {
+    public static var transferRepresentation: some TransferRepresentation {
+        CodableRepresentation(contentType: .movie)
+        
+        FileRepresentation(contentType: .movie) { videoFile in
+            SentTransferredFile(videoFile.url)
+        } importing: { received in
+            let url = received.file
+            return try await VideoFile(url: url)
+        }
+        
+        ProxyRepresentation(exporting: \.url)
+        
+        DataRepresentation(contentType: .movie) { videoFile in
+            try Data(contentsOf: videoFile.url)
+        } importing: { data in
+            let temporaryURL = FileManager.default.temporaryDirectory
+                .appendingPathComponent(UUID().uuidString)
+                .appendingPathExtension("mp4")
+            
+            try data.write(to: temporaryURL)
+            return try await VideoFile(url: temporaryURL)
+        }
+    }
 }
 
 // Error Handling

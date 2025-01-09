@@ -8,6 +8,8 @@
 import Foundation
 import UniformTypeIdentifiers
 
+public protocol MediaMetadata: Codable, Hashable {}
+
 public protocol MediaFile: Identifiable, Codable, Hashable {
     var id: ID { get }
     var url: URL { get }
@@ -16,9 +18,9 @@ public protocol MediaFile: Identifiable, Codable, Hashable {
     var duration: TimeInterval { get }
     var durationFormatted: String { get }
     var sizeFormatted: String { get }
+    var metadata: [String: Any] { get set }
     
     init(url: URL) async throws
 }
 
-extension AudioFile: MediaFile {}
 extension VideoFile: MediaFile {}

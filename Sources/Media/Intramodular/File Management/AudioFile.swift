@@ -8,8 +8,9 @@
 import SwiftUI
 import CorePersistence
 import AVFoundation
+import CoreTransferable
 
-public struct AudioFile: Identifiable, Hashable, Sendable {
+public struct AudioFile: MediaFile {
     public typealias ID = _TypeAssociatedID<Self, UUID>
     
     public let id: ID
@@ -17,7 +18,7 @@ public struct AudioFile: Identifiable, Hashable, Sendable {
     public let name: String
     public let size: Double
     public let duration: TimeInterval
-    public var voiceID: String? = nil
+    public var metadata: [String : Any]
     
     public var durationFormatted: String {
         let minutes = Int(duration) / 60
@@ -35,27 +36,27 @@ public struct AudioFile: Identifiable, Hashable, Sendable {
         return Int(totalCredits)
     }
     
-    // Initializers
+    // Update initializers to include metadata
     public init(
-        id: ID = ID(),
         url: URL,
         name: String,
         size: Double,
         duration: TimeInterval,
-        voiceID: String? = nil
+        metadata: [String : Any] = [:]
     ) {
-        self.id = id
+        self.id = .random()
         self.url = url
         self.name = name
         self.size = size
         self.duration = duration
-        self.voiceID = voiceID
+        self.metadata = metadata
     }
     
     public init(
         data: Data,
         name: String,
-        id: ID
+        id: ID,
+        metadata: [String : Any] = [:]
     ) async throws {
         let temporaryURL = FileManager.default.temporaryDirectory
             .appendingPathComponent(id.rawValue.uuidString)
@@ -71,15 +72,12 @@ public struct AudioFile: Identifiable, Hashable, Sendable {
         url: URL
     ) async throws {
         let asset = AVURLAsset(url: url,
-                               options: [AVURLAssetPreferPreciseDurationAndTimingKey: true]
-        )
+                              options: [AVURLAssetPreferPreciseDurationAndTimingKey: true])
         
         let isPlayable: Bool = try await asset.load(.isPlayable)
         
         guard isPlayable else {
-            throw NSError(domain: "AudioFileError", code: 1, userInfo: [
-                NSLocalizedDescriptionKey: "Audio file is not playable"
-            ])
+            throw AudioFileError.audioNotPlayable
         }
         
         let resourceValues = try url.resourceValues(forKeys: [.fileSizeKey])
@@ -101,6 +99,7 @@ public struct AudioFile: Identifiable, Hashable, Sendable {
         self.name = permanentURL.lastPathComponent
         self.size = fileSize
         self.duration = duration
+        self.metadata = [:]
     }
     
     public func deleteFile() throws {
@@ -117,37 +116,6 @@ public struct AudioFile: Identifiable, Hashable, Sendable {
 }
 
 // MARK: - Conformances
-
-extension AudioFile: Codable {
-    enum CodingKeys: CodingKey {
-        case id
-        case url
-        case name
-        case size
-        case duration
-        case voiceID
-    }
-    
-    public init(from decoder: any Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.id = try container.decode(AudioFile.ID.self, forKey: .id)
-        self.url = try container.decode(URL.self, forKey: .url)
-        self.name = try container.decode(String.self, forKey: .name)
-        self.size = try container.decode(Double.self, forKey: .size)
-        self.duration = try container.decode(TimeInterval.self, forKey: .duration)
-        self.voiceID = try container.decodeIfPresent(String.self, forKey: .voiceID)
-    }
-    
-    public func encode(to encoder: any Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(self.id, forKey: .id)
-        try container.encode(self.url, forKey: .url)
-        try container.encode(self.name, forKey: .name)
-        try container.encode(self.size, forKey: .size)
-        try container.encode(self.duration, forKey: .duration)
-        try container.encode(self.voiceID, forKey: .voiceID)
-    }
-}
 
 extension AudioFile: RawRepresentable {
     public init?(rawValue: String) {
