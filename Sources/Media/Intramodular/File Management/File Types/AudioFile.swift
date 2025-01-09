@@ -18,7 +18,7 @@ public struct AudioFile: MediaFile {
     public let name: String
     public let size: Double
     public let duration: TimeInterval
-    public var metadata: [String : Any]
+    public var metadata: [String : AnyCodable]
     
     public var durationFormatted: String {
         let minutes = Int(duration) / 60
@@ -36,13 +36,12 @@ public struct AudioFile: MediaFile {
         return Int(totalCredits)
     }
     
-    // Update initializers to include metadata
     public init(
         url: URL,
         name: String,
         size: Double,
         duration: TimeInterval,
-        metadata: [String : Any] = [:]
+        metadata: [String : AnyCodable] = [:]
     ) {
         self.id = .random()
         self.url = url
@@ -56,7 +55,7 @@ public struct AudioFile: MediaFile {
         data: Data,
         name: String,
         id: ID,
-        metadata: [String : Any] = [:]
+        metadata: [String : AnyCodable] = [:]
     ) async throws {
         let temporaryURL = FileManager.default.temporaryDirectory
             .appendingPathComponent(id.rawValue.uuidString)

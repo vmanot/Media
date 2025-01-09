@@ -7,7 +7,7 @@ import CorePersistence
 import Foundation
 import CoreTransferable
 
-public struct VideoFile: Identifiable, Hashable {
+public struct VideoFile: MediaFile {
     public typealias ID = _TypeAssociatedID<Self, UUID>
 
     public let id: ID
@@ -17,7 +17,7 @@ public struct VideoFile: Identifiable, Hashable {
     public let duration: TimeInterval
     public let resolution: VideoFile.Resolution
     public let modelID: String?
-    public var metadata: [String : Any] = [:]
+    public var metadata: [String : AnyCodable] = [:]
     
     public var durationFormatted: String {
         let minutes = Int(duration) / 60

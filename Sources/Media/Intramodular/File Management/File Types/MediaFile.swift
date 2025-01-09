@@ -15,12 +15,8 @@ public protocol MediaFile: Identifiable, Codable, Hashable {
     var url: URL { get }
     var name: String { get }
     var size: Double { get }
-    var duration: TimeInterval { get }
-    var durationFormatted: String { get }
     var sizeFormatted: String { get }
-    var metadata: [String: Any] { get set }
+    var metadata: [String: AnyCodable] { get set }
     
     init(url: URL) async throws
 }
-
-extension VideoFile: MediaFile {}
