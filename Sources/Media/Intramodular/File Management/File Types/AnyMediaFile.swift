@@ -18,4 +18,29 @@ public struct AnyMediaFile: Identifiable {
         self.id = AnyHashable(_erasing: file.id)
         self._file = file
     }
+    
+    // Type casting helper
+    public func cast<T: MediaFile>(to type: T.Type) -> T? {
+        _file as? T
+    }
+    
+    // Type checking helper
+    public func isType<T: MediaFile>(of type: T.Type) -> Bool {
+        _file is T
+    }
+}
+
+// Add convenient properties for common types
+public extension AnyMediaFile {
+    var audioFile: AudioFile? {
+        cast(to: AudioFile.self)
+    }
+    
+    var videoFile: VideoFile? {
+        cast(to: VideoFile.self)
+    }
+    
+    var imageFile: ImageFile? {
+        cast(to: ImageFile.self)
+    }
 }

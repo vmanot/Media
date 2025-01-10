@@ -35,12 +35,15 @@ public struct FileDropView<Content: View>: View {
     @State private var processedFiles: [AnyMediaFile] = []
     
     private let content: ([AnyMediaFile]) -> Content
-    
+    private let onDrop: (([AnyMediaFile]) -> ())?
+
     public init(
         configuration: _FileDropViewConfiguration = _FileDropViewConfiguration(),
+        _ onDrop: (([AnyMediaFile]) -> ())? = nil,
         @ViewBuilder content: @escaping ([AnyMediaFile]) -> Content
     ) {
         self.configuration = configuration
+        self.onDrop = onDrop
         self.content = content
     }
     
@@ -85,16 +88,13 @@ public struct FileDropView<Content: View>: View {
 
         for url in urls {
             do {
-                let data = try Data(contentsOf: url, options: [.alwaysMapped])
-                
-                // Detect file type based on magic numbers
-                if isVideoFile(data: data) {
+                if isVideoFile(url: url) {
                     let videoFile = try await VideoFile(url: url)
                     newFiles.append(.init(videoFile))
-                } else if isAudioFile(data: data) {
+                } else if isAudioFile(url: url) {
                     let audioFile = try await AudioFile(url: url)
                     newFiles.append(.init(audioFile))
-                } else if isImageFile(data: data) {
+                } else if isImageFile(url: url) {
                     let imageFile = try await ImageFile(url: url)
                     newFiles.append(.init(imageFile))
                 } else {
@@ -112,64 +112,26 @@ public struct FileDropView<Content: View>: View {
             } else {
                 processedFiles.append(contentsOf: newFiles)
             }
+            onDrop?(processedFiles)
         }
     }
     
+    
     #warning("This should be using MediaAssetType, however I (@archetapp) cannot use that for images, so I'm using this for the time being.")
 
-    private func isVideoFile(data: Data) -> Bool {
-        // MP4
-        if matchesMagicNumbers(data, [0x66, 0x74, 0x79, 0x70], offset: 4) { return true }
-        // MOV
-        if matchesMagicNumbers(data, [0x6D, 0x6F, 0x6F, 0x76], offset: 4) { return true }
-        // AVI
-        if matchesMagicNumbers(data, [0x52, 0x49, 0x46, 0x46]) && matchesMagicNumbers(data, [0x41, 0x56, 0x49], offset: 8) { return true }
-        // MKV
-        if matchesMagicNumbers(data, [0x1A, 0x45, 0xDF, 0xA3]) { return true }
-        // WebM
-        if matchesMagicNumbers(data, [0x1A, 0x45, 0xDF, 0xA3]) { return true } // Shared with MKV
-        return false
+    private func isAudioFile(url: URL) -> Bool {
+        let audioExtensions = ["mp3", "wav", "flac", "aac", "ogg", "m4a"]
+        return audioExtensions.contains(url.pathExtension.lowercased())
     }
 
-    private func isAudioFile(data: Data) -> Bool {
-        // MP3
-        if matchesMagicNumbers(data, [0x49, 0x44, 0x33]) { return true }
-        // WAV
-        if matchesMagicNumbers(data, [0x52, 0x49, 0x46, 0x46]) && matchesMagicNumbers(data, [0x57, 0x41, 0x56, 0x45], offset: 8) { return true }
-        // FLAC
-        if matchesMagicNumbers(data, [0x66, 0x4C, 0x61, 0x43]) { return true }
-        // AAC
-        if matchesMagicNumbers(data, [0xFF, 0xF1]) || matchesMagicNumbers(data, [0xFF, 0xF9]) { return true }
-        // OGG
-        if matchesMagicNumbers(data, [0x4F, 0x67, 0x67, 0x53]) { return true }
-        return false
+    private func isVideoFile(url: URL) -> Bool {
+        let videoExtensions = ["mp4", "mov", "avi", "mkv", "webm"]
+        return videoExtensions.contains(url.pathExtension.lowercased())
     }
 
-    private func isImageFile(data: Data) -> Bool {
-        // JPEG
-        if matchesMagicNumbers(data, [0xFF, 0xD8, 0xFF]) { return true }
-        // PNG
-        if matchesMagicNumbers(data, [0x89, 0x50, 0x4E, 0x47]) { return true }
-        // GIF
-        if matchesMagicNumbers(data, [0x47, 0x49, 0x46]) { return true }
-        // BMP
-        if matchesMagicNumbers(data, [0x42, 0x4D]) { return true }
-        // TIFF (Little Endian)
-        if matchesMagicNumbers(data, [0x49, 0x49, 0x2A, 0x00]) { return true }
-        // TIFF (Big Endian)
-        if matchesMagicNumbers(data, [0x4D, 0x4D, 0x00, 0x2A]) { return true }
-        return false
-    }
-
-
-    private func matchesMagicNumbers(_ data: Data, _ numbers: [UInt8?], offset: Int = 0) -> Bool {
-        guard data.count >= numbers.count else { return false }
-
-        return zip(numbers.indices, numbers).allSatisfy { index, number in
-            guard let number = number else { return true }
-            guard (index + offset) < data.count else { return false }
-            return data[index + offset] == number
-        }
+    private func isImageFile(url: URL) -> Bool {
+        let imageExtensions = ["jpeg", "jpg", "png", "gif", "bmp", "tiff"]
+        return imageExtensions.contains(url.pathExtension.lowercased())
     }
 
 }
@@ -288,21 +250,19 @@ struct MediaPickerButton: View {
     }
     
     private func handlePhotoSelection(_ items: [PhotosPickerItem]) async {
-        var selectedURLs: [URL] = []
-        
         for item in items {
-            if let data = try? await item.loadTransferable(type: Data.self),
-               let temporaryURL = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?.appendingPathComponent(UUID().uuidString) {
-                try? data.write(to: temporaryURL)
-                selectedURLs.append(temporaryURL)
+            if let data = try? await item.loadTransferable(type: Data.self) {
+                let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+                let filename = "photo-\(UUID().uuidString).jpeg"
+                let permanentURL = documentsDirectory.appendingPathComponent(filename)
+                
+                do {
+                    try data.write(to: permanentURL)
+                    await onFilesSelected([permanentURL])
+                } catch {
+                    print("Failed to write photo data: \(error)")
+                }
             }
-        }
-        
-        await onFilesSelected(selectedURLs)
-        
-        // Cleanup temporary files
-        for url in selectedURLs {
-            try? FileManager.default.removeItem(at: url)
         }
         
         selectedPhotoItems.removeAll()
