@@ -20,3 +20,9 @@ public protocol MediaFile: Identifiable, Codable, Hashable {
     
     init(url: URL) async throws
 }
+
+public enum MediaFileType {
+    case image
+    case video
+    case audio
+}

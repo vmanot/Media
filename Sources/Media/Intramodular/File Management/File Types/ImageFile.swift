@@ -30,9 +30,8 @@ public struct ImageFile: MediaFile {
     
     public init(url: URL) async throws {
         let resourceValues = try url.resourceValues(forKeys: [.fileSizeKey])
-        let fileSize = Double(resourceValues.fileSize ?? 0) / (1024 * 1024) // Convert to MB
+        let fileSize = Double(resourceValues.fileSize ?? 0) / (1024 * 1024)
         
-        // Load image to get dimensions
         guard let imageSource = CGImageSource.create(with: url),
               let properties = CGImageSourceCopyPropertiesAtIndex(imageSource, 0, nil) as? [String: Any],
               let width = properties[kCGImagePropertyPixelWidth as String] as? CGFloat,
@@ -40,7 +39,6 @@ public struct ImageFile: MediaFile {
             throw ImageFileError.failedToLoadImage
         }
         
-        // Determine image format
         let format: ImageFileFormatType
         if let utType = CGImageSourceGetType(imageSource) as String? {
             switch utType {
@@ -51,7 +49,7 @@ public struct ImageFile: MediaFile {
             case UTType.heic.identifier:
                 format = .heic
             default:
-                format = .jpeg // Default to JPEG if unknown
+                format = .jpeg
             }
         } else {
             format = .jpeg

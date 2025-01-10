@@ -56,6 +56,8 @@ public struct VideoFile: MediaFile {
     }
 }
 
+// MARK: - Conformances
+
 extension VideoFile: Codable {}
 
 extension VideoFile: Transferable {

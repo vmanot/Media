@@ -30,6 +30,7 @@ public struct AudioFile: MediaFile {
         String(format: "%.1f MB", size)
     }
     
+    // This is too niche I believe as it's strictly AI related
     public var estimatedCredits: Int {
         let creditsPerSecond = 1000.0 / 60.0
         let totalCredits = ceil(duration * creditsPerSecond)
@@ -81,9 +82,7 @@ public struct AudioFile: MediaFile {
         
         let resourceValues = try url.resourceValues(forKeys: [.fileSizeKey])
         let fileSize = Double(resourceValues.fileSize ?? 0) / (1024 * 1024)
-        
         let duration = try await asset.load(.duration).seconds
-        
         let fileName = url.lastPathComponent
         let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let permanentURL = documentsDirectory.appendingPathComponent(fileName)

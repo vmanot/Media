@@ -34,8 +34,8 @@ public struct ImageFileCell: View {
             }
             .frame(maxHeight: 300)
             
-            if let width = file.metadata["width"] as? CGFloat,
-               let height = file.metadata["height"] as? CGFloat {
+            if let width = file.metadata["width"]?.value as? Double,
+               let height = file.metadata["height"]?.value as? Double {
                 HStack {
                     Label("\(Int(width))×\(Int(height))", systemImage: "rectangle")
                         .font(.caption)

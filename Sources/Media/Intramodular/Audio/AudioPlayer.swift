@@ -50,9 +50,13 @@ public final class AudioPlayer: ObservableObject, @unchecked Sendable {
         try await withCheckedThrowingContinuation { continuation in
             objectWillChange.withCriticalScope { objectWillChange in
                 objectWillChange.send()
-                
                 player.play { result in
-                    continuation.resume(with: result)
+                    switch result {
+                    case .success:
+                        continuation.resume()
+                    case .failure(let error):
+                        continuation.resume(throwing: error)
+                    }
                 }
             }
         }

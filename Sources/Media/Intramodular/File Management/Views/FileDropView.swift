@@ -13,7 +13,7 @@ import FoundationX
 // MARK: - Configuration
 
 public struct _FileDropViewConfiguration: Hashable, Initiable, MergeOperatable {
-    public var allowMultiple: Bool = false
+    public var allowMultiple: Bool = true
     public var allowedMediaTypes: [MediaFileType] = []
     
     public init() {}

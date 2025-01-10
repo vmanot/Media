@@ -80,7 +80,6 @@ extension VideoFile {
             let simplifiedWidth = width / gcd
             let simplifiedHeight = height / gcd
             
-            // Check for common aspect ratios
             switch (simplifiedWidth, simplifiedHeight) {
                 case (1, 1): return "1:1"    // Square
                 case (16, 9): return "16:9"  // Standard Widescreen
