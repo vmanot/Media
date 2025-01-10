@@ -23,7 +23,7 @@ public struct MediaFileListView: View {
 
 extension FileDropView where Content == MediaFileListView {
     public init() {
-        self.init { files in
+        self.init() { files in
             MediaFileListView(files: files)
         }
     }

@@ -12,7 +12,7 @@ public struct AnyMediaFile: Identifiable {
     public let id: AnyHashable
     private let _file: any MediaFile
     
-    var file: any MediaFile { _file }
+    public var file: any MediaFile { _file }
     
     public init(_ file: any MediaFile) {
         self.id = AnyHashable(_erasing: file.id)
