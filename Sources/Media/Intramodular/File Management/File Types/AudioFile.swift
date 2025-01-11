@@ -60,8 +60,8 @@ public struct AudioFile: MediaFile {
     ) async throws {
         let temporaryURL = FileManager.default.temporaryDirectory
             .appendingPathComponent(id.rawValue.uuidString)
-            .appendingPathExtension(".m4a")
-        
+            .appendingPathExtension(".mp3")
+        print(temporaryURL)
         try data.write(to: temporaryURL)
         try await self.init(
             url: temporaryURL
@@ -71,6 +71,7 @@ public struct AudioFile: MediaFile {
     public init(
         url: URL
     ) async throws {
+        print(url)
         let asset = AVURLAsset(url: url,
                               options: [AVURLAssetPreferPreciseDurationAndTimingKey: true])
         
