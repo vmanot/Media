@@ -61,7 +61,7 @@ public struct AudioFile: MediaFile {
         let temporaryURL = FileManager.default.temporaryDirectory
             .appendingPathComponent(id.rawValue.uuidString)
             .appendingPathExtension(".mp3")
-        print(temporaryURL)
+        
         try data.write(to: temporaryURL)
         try await self.init(
             url: temporaryURL
@@ -71,9 +71,10 @@ public struct AudioFile: MediaFile {
     public init(
         url: URL
     ) async throws {
-        print(url)
-        let asset = AVURLAsset(url: url,
-                              options: [AVURLAssetPreferPreciseDurationAndTimingKey: true])
+        let asset = AVURLAsset(
+            url: url,
+            options: [AVURLAssetPreferPreciseDurationAndTimingKey: true]
+        )
         
         let isPlayable: Bool = try await asset.load(.isPlayable)
         
@@ -84,18 +85,10 @@ public struct AudioFile: MediaFile {
         let resourceValues = try url.resourceValues(forKeys: [.fileSizeKey])
         let fileSize = Double(resourceValues.fileSize ?? 0) / (1024 * 1024)
         let duration = try await asset.load(.duration).seconds
-        let fileName = url.lastPathComponent
-        let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        let permanentURL = documentsDirectory.appendingPathComponent(fileName)
-        
-        if FileManager.default.fileExists(atPath: permanentURL.path) {
-            try FileManager.default.removeItem(at: permanentURL)
-        }
-        try FileManager.default.copyItem(at: url, to: permanentURL)
         
         self.id = .random()
-        self.url = permanentURL
-        self.name = permanentURL.lastPathComponent
+        self.url = url
+        self.name = url.lastPathComponent
         self.size = fileSize
         self.duration = duration
         self.metadata = [:]
