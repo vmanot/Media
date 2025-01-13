@@ -69,7 +69,23 @@ public struct AudioFile: MediaFile {
     }
     
     public init(
-        url: URL
+        id: ID = .random(),
+        data: Data,
+        name: String,
+        destinationURL: URL,
+        metadata: [String: AnyCodable] = [:]
+    ) async throws {
+        try data.write(to: destinationURL)
+        try await self.init(url: destinationURL, metadata: metadata)
+    }
+    
+    public init(url: URL) async throws {
+        try await self.init(url: url, metadata: [:])
+    }
+    
+    public init(
+        url: URL,
+        metadata: [String: AnyCodable] = [:]
     ) async throws {
         let asset = AVURLAsset(
             url: url,
@@ -91,7 +107,7 @@ public struct AudioFile: MediaFile {
         self.name = url.lastPathComponent
         self.size = fileSize
         self.duration = duration
-        self.metadata = [:]
+        self.metadata = metadata
     }
     
     public func deleteFile() throws {
