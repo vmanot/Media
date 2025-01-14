@@ -12,30 +12,47 @@ import SwiftUIX
 
 class SpeechRecognizer: NSObject, ObservableObject {
     @Published var transcribedText = ""
+    @Published private(set) var isAvailable = false
+    
     private var recognitionTask: SFSpeechRecognitionTask?
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private let transcriptionBuffer = TranscriptionBuffer()
-    private let recognizer: SFSpeechRecognizer
+    private let recognizer: SFSpeechRecognizer?
     private var audioEngine: AVAudioEngine?
     
-    init(locale: Locale) {
-        self.recognizer = SFSpeechRecognizer(locale: locale) ?? SFSpeechRecognizer(locale: .current)!
+    init(enabled: Bool = true, locale: Locale) {
+        // Only initialize the recognizer if speech recognition is enabled
+        if enabled {
+            self.recognizer = SFSpeechRecognizer(locale: locale) ?? SFSpeechRecognizer(locale: .current)
+        } else {
+            self.recognizer = nil
+        }
+        
         super.init()
         
+        if enabled {
+            setupRecognizer()
+        }
+    }
+    
+    private func setupRecognizer() {
         #if os(iOS)
         SFSpeechRecognizer.requestAuthorization { [weak self] status in
             guard status == .authorized else {
                 print("Speech recognition not authorized")
                 return
             }
-            self?.recognizer.delegate = self
+            self?.recognizer?.delegate = self
         }
         #else
-        self.recognizer.delegate = self
+        self.recognizer?.delegate = self
         #endif
     }
     
     func startRecognition() {
+        // If recognizer is nil, speech recognition is disabled
+        guard let recognizer = recognizer else { return }
+        
         let engine = AVAudioEngine()
         self.audioEngine = engine
         
@@ -98,10 +115,11 @@ class SpeechRecognizer: NSObject, ObservableObject {
     }
 }
 
-// MARK: - Conformances
-
 extension SpeechRecognizer: SFSpeechRecognizerDelegate {
     func speechRecognizer(_ speechRecognizer: SFSpeechRecognizer, availabilityDidChange available: Bool) {
+        DispatchQueue.main.async {
+            self.isAvailable = available
+        }
         if !available {
             print("Speech recognition became unavailable")
         }

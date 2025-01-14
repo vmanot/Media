@@ -68,7 +68,7 @@ public struct AudioFileView: View {
             }
             
             if let transcription = file.transcription {
-                Text(file.transcription ?? "")
+                Text(transcription)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

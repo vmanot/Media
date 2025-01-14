@@ -8,7 +8,7 @@
 import Foundation
 
 extension VideoFile {
-    public enum Resolution: Codable, Hashable {
+    public enum Resolution: Codable, Hashable, Sendable {
         // Square Resolutions
         case sd512x512
         case sd768x768

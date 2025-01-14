@@ -30,7 +30,6 @@ public struct AudioRecorderViewConfiguration: Hashable, Initiable, MergeOperatab
 }
 
 public struct AudioRecorderView<Content: View>: View {
-    @Environment(\._audioRecorderViewConfiguration) var inheritedConfiguration
     let configuration: AudioRecorderViewConfiguration
     
     @StateObject private var recorder = AudioRecorder()
@@ -51,7 +50,10 @@ public struct AudioRecorderView<Content: View>: View {
         self.configuration = configuration
         self.onRecord = onRecord
         self.content = content
-        _speechRecognizer = StateObject(wrappedValue: SpeechRecognizer(locale: configuration.locale))
+        _speechRecognizer = StateObject(wrappedValue: SpeechRecognizer(
+            enabled: configuration.enableSpeechRecognition,
+            locale: configuration.locale
+        ))
     }
     
     public var body: some View {
@@ -111,7 +113,6 @@ public struct AudioRecorderView<Content: View>: View {
     }
     
     private func handleRecordingFinished() {
-        // FIX ME - This should just be returning the MediaAssetLocation
         Task {
             if let data = try? recorder.recording?.data(),
                var audioFile = try? await AudioFile(
@@ -148,18 +149,4 @@ public struct AudioRecorderView<Content: View>: View {
         currentAmplitudes.removeFirst()
         currentAmplitudes.append(CGFloat(recorder.normalizedPowerLevel))
     }
-}
-
-extension EnvironmentValues {
-    var _audioRecorderViewConfiguration: AudioRecorderViewConfiguration {
-        get {
-            self[AudioRecorderViewConfigurationKey.self]
-        } set {
-            self[AudioRecorderViewConfigurationKey.self] = newValue
-        }
-    }
-}
-
-private struct AudioRecorderViewConfigurationKey: EnvironmentKey {
-    static let defaultValue = AudioRecorderViewConfiguration()
 }
