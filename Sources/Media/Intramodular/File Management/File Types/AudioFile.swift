@@ -19,6 +19,7 @@ public struct AudioFile: MediaFile {
     public let size: Double
     public let duration: TimeInterval
     public var metadata: [String : AnyCodable]
+    public var asset: AVURLAsset
     
     public var durationFormatted: String {
         let minutes = Int(duration) / 60
@@ -50,6 +51,17 @@ public struct AudioFile: MediaFile {
         self.size = size
         self.duration = duration
         self.metadata = metadata
+        self.asset = AVURLAsset(
+            url: url,
+            options: [AVURLAssetPreferPreciseDurationAndTimingKey: true]
+        )
+        /*
+        let isPlayable: Bool = try await asset.load(.isPlayable)
+        
+        guard isPlayable else {
+            throw AudioFileError.audioNotPlayable
+        }
+        */
     }
     
     public init(
@@ -108,6 +120,7 @@ public struct AudioFile: MediaFile {
         self.size = fileSize
         self.duration = duration
         self.metadata = metadata
+        self.asset = asset
     }
     
     public func deleteFile() throws {
@@ -124,6 +137,27 @@ public struct AudioFile: MediaFile {
 }
 
 // MARK: - Conformances
+
+extension AudioFile: Codable {
+    public enum CodingKeys: String, CodingKey {
+        case id
+        case url
+        case name
+        case size
+        case duration
+        case metadata
+    }
+    
+    public init(from decoder: any Decoder) throws {
+        self.id = try decoder.decode(forKey: CodingKeys.id)
+        self.url = try decoder.decode(URL.self, forKey: CodingKeys.url)
+        self.name = try decoder.decode(String.self, forKey: CodingKeys.name)
+        self.size = try decoder.decode(Double.self, forKey: CodingKeys.size)
+        self.duration = try decoder.decode(TimeInterval.self, forKey: CodingKeys.duration)
+        self.metadata = try decoder.decode([String: AnyCodable].self, forKey: CodingKeys.metadata)
+        self.asset = AVURLAsset(url: self.url, options: [AVURLAssetPreferPreciseDurationAndTimingKey: true])
+    }
+}
 
 extension AudioFile: Transferable {
     public static var transferRepresentation: some TransferRepresentation {

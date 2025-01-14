@@ -119,6 +119,8 @@ public struct FileDropView<Content: View>: View {
     
     #warning("This should be using MediaAssetType, however I (@archetapp) cannot use that for images, so I'm using this for the time being.")
 
+    // TODO: (@archetapp) - Use UTType.preferredFilenameExtension instead of using raw string literals for the extensions
+
     private func isAudioFile(url: URL) -> Bool {
         let audioExtensions = ["mp3", "wav", "flac", "aac", "ogg", "m4a", "aifc"]
         return audioExtensions.contains(url.pathExtension.lowercased())
