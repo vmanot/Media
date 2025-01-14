@@ -68,11 +68,12 @@ public struct AudioFile: MediaFile {
         data: Data,
         name: String,
         id: ID,
+        fileType: AudioFileFormatType = .mp3,
         metadata: [String : AnyCodable] = [:]
     ) async throws {
         let temporaryURL = FileManager.default.temporaryDirectory
             .appendingPathComponent(id.rawValue.uuidString)
-            .appendingPathExtension(".mp3")
+            .appendingPathExtension(fileType.fileExtension)
         
         try data.write(to: temporaryURL)
         try await self.init(

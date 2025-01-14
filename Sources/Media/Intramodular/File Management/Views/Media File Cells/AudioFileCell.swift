@@ -1,5 +1,5 @@
 //
-//  AudioFileCell.swift
+//  AudioFileView.swift
 //  Media
 //
 //  Created by Jared Davidson on 1/9/25.
@@ -8,7 +8,7 @@
 import SwiftUI
 import AVFoundation
 
-public struct AudioFileCell: View {
+public struct AudioFileView: View {
     let file: AudioFile
     @StateObject private var player = AudioPlayer()
     @State private var currentTime: TimeInterval = 0

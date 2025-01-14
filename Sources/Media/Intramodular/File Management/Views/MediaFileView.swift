@@ -33,11 +33,11 @@ public struct MediaFileView: View {
             
             // Media content
             if let audioFile = file as? AudioFile {
-                AudioFileCell(file: audioFile)
+                AudioFileView(file: audioFile)
             } else if let videoFile = file as? VideoFile {
-                VideoFileCell(file: videoFile)
+                VideoFileView(file: videoFile)
             } else if let imageFile = file as? ImageFile {
-                ImageFileCell(file: imageFile)
+                ImageFileView(file: imageFile)
             }
         }
         .padding()
