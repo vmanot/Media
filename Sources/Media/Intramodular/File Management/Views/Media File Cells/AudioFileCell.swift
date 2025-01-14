@@ -67,11 +67,10 @@ public struct AudioFileView: View {
                 }
             }
             
-            HStack {
-                Label("\(file.durationFormatted)", systemImage: "clock")
+            if let transcription = file.transcription {
+                Text(file.transcription ?? "")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Spacer()
             }
         }
         .onReceive(timer) { _ in

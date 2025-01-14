@@ -19,6 +19,7 @@ public struct AudioFile: MediaFile {
     public let size: Double
     public let duration: TimeInterval
     public var metadata: [String : AnyCodable]
+    public var transcription: String?
     public var asset: AVURLAsset
     
     public var durationFormatted: String {

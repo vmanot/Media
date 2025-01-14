@@ -56,8 +56,6 @@ public struct FileDropView<Content: View>: View {
                     onFilesSelected: handleSelectedFiles,
                     configuration: configuration
                 )
-                .frame(maxWidth: .infinity)
-                .frame(height: 220)
                 .padding(.horizontal)
             }
             
@@ -179,10 +177,6 @@ public struct EmptyFileDropView: View {
                         Text("Drag and drop media files")
                             .font(.headline)
 #endif
-                        
-                        Text("Supports images, audio, and video up to 50MB")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
                     }
                 }
             }

@@ -63,8 +63,6 @@ public struct AudioRecorderView<Content: View>: View {
                 amplitudes: currentAmplitudes,
                 onRecordToggle: toggleRecording
             )
-            .frame(maxWidth: .infinity)
-            .frame(height: 220)
             .padding(.horizontal)
             
             content(recordedAudio)
@@ -115,13 +113,14 @@ public struct AudioRecorderView<Content: View>: View {
     private func handleRecordingFinished() {
         // FIX ME - This should just be returning the MediaAssetLocation
         Task {
-            if let data = try? await recorder.recording?.data(),
-               let audioFile = try? await AudioFile(
+            if let data = try? recorder.recording?.data(),
+               var audioFile = try? await AudioFile(
                 data: data,
                 name: UUID().uuidString,
                 id: .random(),
                 fileType: .m4a
                ) {
+                audioFile.transcription = speechRecognizer.transcribedText
                 recordedAudio = audioFile
                 onRecord?(audioFile)
             }
