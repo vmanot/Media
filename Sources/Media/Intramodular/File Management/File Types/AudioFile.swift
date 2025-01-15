@@ -149,12 +149,15 @@ extension AudioFile: Codable {
     }
     
     public init(from decoder: any Decoder) throws {
-        self.id = try decoder.decode(forKey: CodingKeys.id)
-        self.url = try decoder.decode(URL.self, forKey: CodingKeys.url)
-        self.name = try decoder.decode(String.self, forKey: CodingKeys.name)
-        self.size = try decoder.decode(Double.self, forKey: CodingKeys.size)
-        self.duration = try decoder.decode(TimeInterval.self, forKey: CodingKeys.duration)
-        self.metadata = try decoder.decode([String: AnyCodable].self, forKey: CodingKeys.metadata)
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        self.id = try container.decode(ID.self, forKey: CodingKeys.id)
+        self.url = try container.decode(URL.self, forKey: CodingKeys.url)
+        self.name = try container.decode(String.self, forKey: CodingKeys.name)
+        self.size = try container.decode(Double.self, forKey: CodingKeys.size)
+        self.duration = try container.decode(TimeInterval.self, forKey: CodingKeys.duration)
+        self.metadata = try container.decode([String: AnyCodable].self, forKey: CodingKeys.metadata)
+        
         self.asset = AVURLAsset(url: self.url, options: [AVURLAssetPreferPreciseDurationAndTimingKey: true])
     }
 }
