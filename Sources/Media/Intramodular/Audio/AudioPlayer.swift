@@ -38,7 +38,7 @@ public final class AudioPlayer: ObservableObject, @unchecked Sendable {
     
     @MainActor
     public func play(_ asset: MediaAssetLocation) async throws {
-        // Stop any existing playback
+
         stop()
         
         // Create new player

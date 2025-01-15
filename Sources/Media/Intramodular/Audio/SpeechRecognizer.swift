@@ -21,7 +21,6 @@ class SpeechRecognizer: NSObject, ObservableObject {
     private var audioEngine: AVAudioEngine?
     
     init(enabled: Bool = true, locale: Locale) {
-        // Only initialize the recognizer if speech recognition is enabled
         if enabled {
             self.recognizer = SFSpeechRecognizer(locale: locale) ?? SFSpeechRecognizer(locale: .current)
         } else {
@@ -50,7 +49,6 @@ class SpeechRecognizer: NSObject, ObservableObject {
     }
     
     func startRecognition() {
-        // If recognizer is nil, speech recognition is disabled
         guard let recognizer = recognizer else { return }
         
         let engine = AVAudioEngine()
