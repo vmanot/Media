@@ -14,9 +14,7 @@ public final class AudioPlayer: ObservableObject, @unchecked Sendable {
     
     private var currentPlayer: _AVAudioPlayer?
     
-    public var isPlaying: Bool {
-        currentPlayer?.isPlaying ?? false
-    }
+    @Published public private(set) var isPlaying: Bool = false
     
     public var volume: Double? {
         didSet {
@@ -38,13 +36,15 @@ public final class AudioPlayer: ObservableObject, @unchecked Sendable {
         _ = try? tearDown()
     }
     
+    @MainActor
     public func play(_ asset: MediaAssetLocation) async throws {
-        // Stop any existing playback
+
         stop()
         
         // Create new player
         let player = _AVAudioPlayer(asset: asset, volume: self.volume)
         currentPlayer = player
+        isPlaying = true
         
         // Play and wait for completion
         try await withCheckedThrowingContinuation { continuation in
@@ -63,11 +63,14 @@ public final class AudioPlayer: ObservableObject, @unchecked Sendable {
         
         // Clean up after completion
         currentPlayer = nil
+        isPlaying = false
     }
     
+    @MainActor
     public func stop() {
         currentPlayer?.stop()
         currentPlayer = nil
+        isPlaying = false
     }
     
     public var currentTime: TimeInterval {

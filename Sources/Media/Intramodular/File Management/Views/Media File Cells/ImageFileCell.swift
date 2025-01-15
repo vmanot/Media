@@ -1,5 +1,5 @@
 //
-//  ImageFileCell.swift
+//  ImageFileView.swift
 //  Media
 //
 //  Created by Jared Davidson on 1/9/25.
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-public struct ImageFileCell: View {
+public struct ImageFileView: View {
     let file: ImageFile
     
     public init(file: ImageFile) {

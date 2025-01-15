@@ -1,5 +1,5 @@
 //
-//  VideoFileCell.swift
+//  VideoFileView.swift
 //  Media
 //
 //  Created by Jared Davidson on 1/9/25.
@@ -9,7 +9,7 @@ import SwiftUI
 import AVFoundation
 import _AVKit_SwiftUI
 
-public struct VideoFileCell: View {
+public struct VideoFileView: View {
     let file: VideoFile
     @State private var player: AVPlayer?
     @State private var timeObserver: Any?

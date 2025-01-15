@@ -10,7 +10,7 @@ import UniformTypeIdentifiers
 
 public protocol MediaMetadata: Codable, Hashable {}
 
-public protocol MediaFile: Identifiable, Codable, Hashable {
+public protocol MediaFile: Identifiable, Codable, Hashable, Sendable {
     var id: ID { get }
     var url: URL { get }
     var name: String { get }
