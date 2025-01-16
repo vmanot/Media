@@ -117,23 +117,23 @@ public struct FileDropView<Content: View>: View {
     
     #warning("This should be using MediaAssetType, however I (@archetapp) cannot use that for images, so I'm using this for the time being.")
 
-    // TODO: (@archetapp) - Use UTType.preferredFilenameExtension instead of using raw string literals for the extensions
-
     private func isAudioFile(url: URL) -> Bool {
-        let audioExtensions = ["mp3", "wav", "flac", "aac", "ogg", "m4a", "aifc"]
-        return audioExtensions.contains(url.pathExtension.lowercased())
+        guard let contentType: UTType = try? url.resourceValues(forKeys: [.contentTypeKey]).contentType else { return false }
+        
+        return contentType.conforms(to: .audio)
     }
 
     private func isVideoFile(url: URL) -> Bool {
-        let videoExtensions = ["mp4", "mov", "avi", "mkv", "webm"]
-        return videoExtensions.contains(url.pathExtension.lowercased())
+        guard let contentType: UTType = try? url.resourceValues(forKeys: [.contentTypeKey]).contentType else { return false }
+        
+        return contentType.conforms(to: .video)
     }
 
     private func isImageFile(url: URL) -> Bool {
-        let imageExtensions = ["jpeg", "jpg", "png", "gif", "bmp", "tiff"]
-        return imageExtensions.contains(url.pathExtension.lowercased())
+        guard let contentType: UTType = try? url.resourceValues(forKeys: [.contentTypeKey]).contentType else { return false }
+        
+        return contentType.conforms(to: .image)
     }
-
 }
 
 // MARK: - Supporting Views
