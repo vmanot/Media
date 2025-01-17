@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Swallow
 import UniformTypeIdentifiers
 
 public protocol MediaMetadata: Codable, Hashable {}

@@ -37,43 +37,43 @@ extension VideoFile {
             ]
         }
         
-        public var dimensions: (width: Int, height: Int) {
+        public var dimensions: CGSize {
             switch self {
                 // Square Resolutions
                 case .sd512x512:
-                    return (512, 512)
+                    return CGSize(width: 512, height: 512)
                 case .sd768x768:
-                    return (768, 768)
+                    return CGSize(width: 768, height: 768)
                 case .sd1024x1024:
-                    return (1024, 1024)
+                    return CGSize(width: 1024, height: 1024)
                 
                 // Landscape HD Resolutions
                 case .hd720p:
-                    return (1280, 720)
+                    return CGSize(width: 1280, height: 720)
                 case .hd1080p:
-                    return (1920, 1080)
+                    return CGSize(width: 1920, height: 1080)
                 case .hd1440p:
-                    return (2560, 1440)
+                    return CGSize(width: 2560, height: 1440)
                 case .uhd4k:
-                    return (3840, 2160)
+                    return CGSize(width: 3840, height: 2160)
                 
                 // Social Media Formats
                 case .instagram:
-                    return (1080, 1080)
+                    return CGSize(width: 1080, height: 1080)
                 case .story:
-                    return (1080, 1920)
+                    return CGSize(width: 1080, height: 1920)
                 case .tiktok:
-                    return (1080, 1920)
+                    return CGSize(width: 1080, height: 1920)
                 case .youtube:
-                    return (1920, 1080)
+                    return CGSize(width: 1920, height: 1080)
                 
                 case .custom(let width, let height):
-                    return (width, height)
+                    return CGSize(width: width, height: height)
             }
         }
         
-        public var width: Int { dimensions.width }
-        public var height: Int { dimensions.height }
+        public var width: Int { Int(dimensions.width) }
+        public var height: Int { Int(dimensions.height) }
         
         public var aspectRatio: String {
             let gcd = calculateGCD(width, height)
