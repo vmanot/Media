@@ -58,7 +58,7 @@ public struct AudioRecorderView<Content: View>: View {
     
     public var body: some View {
         VStack {
-            DefaultAudioRecoderView(
+            _Controls(
                 isRecording: recorder.state == .recording,
                 recordingTime: recordingTime,
                 transcribedText: speechRecognizer.transcribedText,

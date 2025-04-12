@@ -10,13 +10,15 @@ import Speech
 import AVFoundation
 import SwiftUIX
 
+// A Speech transcription recorder + buffer to make recording and transcription simple and continuous.
+
 class SpeechRecognizer: NSObject, ObservableObject {
     @Published var transcribedText = ""
     @Published private(set) var isAvailable = false
     
     private var recognitionTask: SFSpeechRecognitionTask?
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
-    private let transcriptionBuffer = TranscriptionBuffer()
+    private let transcriptionBuffer = _TranscriptionBuffer()
     private let recognizer: SFSpeechRecognizer?
     private var audioEngine: AVAudioEngine?
     
@@ -112,6 +114,8 @@ class SpeechRecognizer: NSObject, ObservableObject {
         recognitionRequest = nil
     }
 }
+
+// MARK: - Conformances
 
 extension SpeechRecognizer: SFSpeechRecognizerDelegate {
     func speechRecognizer(_ speechRecognizer: SFSpeechRecognizer, availabilityDidChange available: Bool) {
