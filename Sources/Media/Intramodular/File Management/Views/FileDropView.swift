@@ -1,10 +1,3 @@
-//
-//  FileDropView.swift
-//  Media
-//
-//  Created by Jared Davidson on 1/9/25.
-//
-
 import UniformTypeIdentifiers
 import PhotosUI
 import SwiftUIX
@@ -12,34 +5,52 @@ import FoundationX
 
 // MARK: - Configuration
 
-public struct _FileDropViewConfiguration: Hashable, Initiable, MergeOperatable {
-    public var allowMultiple: Bool = true
-    public var allowedMediaTypes: [MediaFileType] = []
+public struct FileDropViewConfiguration: Hashable {
+    public var allowMultiple: Bool
+    public var allowedMediaTypes: Set<_MediaAssetFileType>
     
-    public init() {}
-    
-    public mutating func mergeInPlace(with other: _FileDropViewConfiguration) {
-        self.allowMultiple = other.allowMultiple
-        self.allowedMediaTypes = [.audio, .image, .video]
+    public init(
+        allowMultiple: Bool = true,
+        allowedMediaTypes: Set<_MediaAssetFileType> = [
+            .mp3,
+            .m4a,
+            .wav,
+            .ogg,
+            .flac,
+            .aac,
+            // Audio
+            .png,
+            .jpeg,
+            .gif,
+            .heic,
+            .webp,
+            // Images
+            .mp4,
+            .m4v,
+            .mov,
+            .avi,
+            .mpeg
+        ]          // Video
+    ) {
+        self.allowMultiple = allowMultiple
+        self.allowedMediaTypes = allowedMediaTypes
     }
 }
 
 // MARK: - Main View
 
 public struct FileDropView<Content: View>: View {
-    @Environment(\._fileDropViewConfiguration) var inheritedConfiguration
-    let configuration: _FileDropViewConfiguration
+    private let configuration: FileDropViewConfiguration
+    private let content: ([AnyMediaFile]) -> Content
+    private let onDrop: (([AnyMediaFile]) -> Void)?
     
-    @State private var dragOver = false
-    @State private var processingFiles = false
+    @State private var isDragActive = false
+    @State private var isProcessing = false
     @State private var processedFiles: [AnyMediaFile] = []
     
-    private let content: ([AnyMediaFile]) -> Content
-    private let onDrop: (([AnyMediaFile]) -> ())?
-
     public init(
-        configuration: _FileDropViewConfiguration = _FileDropViewConfiguration(),
-        _ onDrop: (([AnyMediaFile]) -> ())? = nil,
+        configuration: FileDropViewConfiguration = FileDropViewConfiguration(),
+        onDrop: (([AnyMediaFile]) -> Void)? = nil,
         @ViewBuilder content: @escaping ([AnyMediaFile]) -> Content
     ) {
         self.configuration = configuration
@@ -51,8 +62,8 @@ public struct FileDropView<Content: View>: View {
         VStack {
             if processedFiles.isEmpty {
                 EmptyFileDropView(
-                    isActive: dragOver,
-                    isProcessing: processingFiles,
+                    isDragActive: isDragActive,
+                    isProcessing: isProcessing,
                     onFilesSelected: handleSelectedFiles,
                     configuration: configuration
                 )
@@ -62,48 +73,44 @@ public struct FileDropView<Content: View>: View {
             content(processedFiles)
         }
         .overlay {
-            if dragOver {
+            if isDragActive {
                 RoundedRectangle(cornerRadius: 10)
                     .strokeBorder(Color.accentColor, lineWidth: 2)
-                    .animation(.default, value: dragOver)
+                    .animation(.default, value: isDragActive)
             }
         }
-        .dropDestination(for: URL.self) { urls, location in
+        .dropDestination(for: URL.self) { urls, _ in
             Task {
                 await handleSelectedFiles(urls)
             }
             return true
         } isTargeted: { targeted in
-            dragOver = targeted
+            isDragActive = targeted
         }
     }
     
     private func handleSelectedFiles(_ urls: [URL]) async {
-        processingFiles = true
-        defer { processingFiles = false }
-
+        isProcessing = true
+        defer { isProcessing = false }
+        
         var newFiles: [AnyMediaFile] = []
-
+        
         for url in urls {
             do {
-                if isVideoFile(url: url) {
-                    let videoFile = try await VideoFile(url: url)
-                    newFiles.append(.init(videoFile))
-                } else if isAudioFile(url: url) {
-                    let audioFile = try await AudioFile(url: url)
-                    newFiles.append(.init(audioFile))
-                } else if isImageFile(url: url) {
-                    let imageFile = try await ImageFile(url: url)
-                    newFiles.append(.init(imageFile))
-                } else {
-                    print("Unsupported file type: \(url.lastPathComponent)")
+                guard let mediaType = try await detectMediaType(from: url) else { continue }
+                
+                if !configuration.allowedMediaTypes.isEmpty &&
+                    !configuration.allowedMediaTypes.contains(mediaType) {
+                    continue
                 }
+                
+                let mediaFile = try await createMediaFile(url: url, type: mediaType)
+                newFiles.append(mediaFile)
             } catch {
                 print("Error processing file \(url.lastPathComponent): \(error)")
             }
         }
-
-        // Update UI on main thread
+        
         await MainActor.run {
             if !configuration.allowMultiple {
                 processedFiles = newFiles
@@ -114,35 +121,41 @@ public struct FileDropView<Content: View>: View {
         }
     }
     
+    private func detectMediaType(from url: URL) async throws -> _MediaAssetFileType? {
+        guard let contentType = try? url.resourceValues(forKeys: [.contentTypeKey]).contentType else {
+            return nil
+        }
+        
+        // First try to detect from file data for more accurate type detection
+        if let data = try? Data(contentsOf: url, options: .alwaysMapped),
+           let type = _MediaAssetFileType(data) {
+            return type
+        }
+        
+        // Fallback to UTType-based detection
+        return _MediaAssetFileType(rawValue: contentType.identifier)
+    }
     
-    #warning("This should be using MediaAssetType, however I (@archetapp) cannot use that for images, so I'm using this for the time being.")
-
-    private func isAudioFile(url: URL) -> Bool {
-        guard let contentType: UTType = try? url.resourceValues(forKeys: [.contentTypeKey]).contentType else { return false }
-        
-        return contentType.conforms(to: .audio)
-    }
-
-    private func isVideoFile(url: URL) -> Bool {
-        guard let contentType: UTType = try? url.resourceValues(forKeys: [.contentTypeKey]).contentType else { return false }
-        
-        return contentType.conforms(to: .video)
-    }
-
-    private func isImageFile(url: URL) -> Bool {
-        guard let contentType: UTType = try? url.resourceValues(forKeys: [.contentTypeKey]).contentType else { return false }
-        
-        return contentType.conforms(to: .image)
+    private func createMediaFile(url: URL, type: _MediaAssetFileType) async throws -> AnyMediaFile {
+        if type.isVideo {
+            return .init(try await VideoFile(url: url))
+        } else if type.isAudio {
+            return .init(try await AudioFile(url: url))
+        } else if type.isImage {
+            return .init(try await ImageFile(url: url))
+        } else {
+            throw MediaFileError.unsupportedFileType
+        }
     }
 }
 
-// MARK: - Supporting Views
+// MARK: - Empty State View
 
 public struct EmptyFileDropView: View {
-    let isActive: Bool
+    let isDragActive: Bool
     let isProcessing: Bool
     let onFilesSelected: ([URL]) async -> Void
-    let configuration: _FileDropViewConfiguration
+    let configuration: FileDropViewConfiguration
     
     public var body: some View {
         ZStack {
@@ -150,34 +163,19 @@ public struct EmptyFileDropView: View {
                 .fill(Color.systemGray6)
             
             VStack(spacing: 16) {
-                Circle()
-                    .stroke(Color.systemGray3, style: StrokeStyle(lineWidth: 2, dash: [5]))
-                    .frame(width: 50, height: 50)
-                    .overlay {
-#if os(iOS)
-                        Image(systemName: "plus.circle")
-                            .font(.system(size: 24))
-                            .foregroundStyle(Color.accentColor)
-#else
-                        Image(systemName: "arrow.down.circle")
-                            .font(.system(size: 24))
-                            .foregroundStyle(Color.accentColor)
-#endif
-                    }
+                CircleIcon()
                 
                 if isProcessing {
                     Text("Processing...")
                         .foregroundStyle(.secondary)
                 } else {
-                    VStack(spacing: 4) {
 #if os(iOS)
-                        Text("Choose media files")
-                            .font(.headline)
+                    Text("Choose media files")
+                        .font(.headline)
 #else
-                        Text("Drag and drop media files")
-                            .font(.headline)
+                    Text("Drag and drop media files")
+                        .font(.headline)
 #endif
-                    }
                 }
             }
             .padding()
@@ -194,11 +192,32 @@ public struct EmptyFileDropView: View {
     }
 }
 
+private struct CircleIcon: View {
+    var body: some View {
+        Circle()
+            .stroke(Color.systemGray3, style: StrokeStyle(lineWidth: 2, dash: [5]))
+            .frame(width: 50, height: 50)
+            .overlay {
 #if os(iOS)
-struct MediaPickerButton: View {
+                Image(systemName: "plus.circle")
+                    .font(.system(size: 24))
+                    .foregroundStyle(Color.accentColor)
+#else
+                Image(systemName: "arrow.down.circle")
+                    .font(.system(size: 24))
+                    .foregroundStyle(Color.accentColor)
+#endif
+            }
+    }
+}
+
+// MARK: - iOS Media Picker
+
+#if os(iOS)
+private struct MediaPickerButton: View {
     let isProcessing: Bool
     let onFilesSelected: ([URL]) async -> Void
-    let configuration: _FileDropViewConfiguration
+    let configuration: FileDropViewConfiguration
     
     @State private var isShowingFileImporter = false
     @State private var isShowingActionSheet = false
@@ -212,6 +231,7 @@ struct MediaPickerButton: View {
             Color.clear
                 .contentShape(Rectangle())
         }
+        .disabled(isProcessing)
         .confirmationDialog("Choose Media", isPresented: $isShowingActionSheet) {
             Button("Choose from Files") {
                 isShowingFileImporter = true
@@ -225,7 +245,7 @@ struct MediaPickerButton: View {
         }
         .fileImporter(
             isPresented: $isShowingFileImporter,
-            allowedContentTypes: [.audio, .movie, .video, .image],
+            allowedContentTypes: Array(configuration.allowedMediaTypes).compactMap(\.utType),
             allowsMultipleSelection: configuration.allowMultiple
         ) { result in
             Task {
@@ -236,7 +256,9 @@ struct MediaPickerButton: View {
         }
         .photosPicker(
             isPresented: $isShowingPhotoPicker,
-            selection: $selectedPhotoItems
+            selection: $selectedPhotoItems,
+            maxSelectionCount: configuration.allowMultiple ? nil : 1,
+            matching: .images
         )
         .onChange(of: selectedPhotoItems) { items in
             Task {
@@ -266,18 +288,8 @@ struct MediaPickerButton: View {
 }
 #endif
 
-// MARK: - Environment
+// MARK: - Supporting Types
 
-extension EnvironmentValues {
-    var _fileDropViewConfiguration: _FileDropViewConfiguration {
-        get {
-            self[_FileDropViewConfigurationKey.self]
-        } set {
-            self[_FileDropViewConfigurationKey.self] = newValue
-        }
-    }
-}
-
-private struct _FileDropViewConfigurationKey: EnvironmentKey {
-    static let defaultValue = _FileDropViewConfiguration()
+private enum MediaFileError: Error {
+    case unsupportedFileType
 }

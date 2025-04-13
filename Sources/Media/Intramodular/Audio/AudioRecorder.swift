@@ -117,7 +117,7 @@ extension AudioRecorder {
         
         let permitted = try await requestPermission()
         
-        try _tryAssert(permitted)
+        try #assert(permitted)
         
         let url = temporaryFileURL()
         
@@ -159,7 +159,7 @@ extension AudioRecorder {
         }.value
         
         guard prepared else {
-            throw _PlaceholderError()
+            #throw
         }
         
         self.state = .prepared
@@ -182,7 +182,7 @@ extension AudioRecorder {
                 try await Task.sleep(.milliseconds(100))
                 try base.record()
             } catch {
-                throw _PlaceholderError()
+                #throw
             }
         }
         
