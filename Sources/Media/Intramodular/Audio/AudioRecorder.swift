@@ -8,6 +8,7 @@ import AVFoundation
 import Foundation
 import Merge
 import SwiftUIX
+import SwallowMacrosClient
 
 /// A sane, modern replacement for `AVAudioRecorder`.
 public final class AudioRecorder: NSObject, ObservableObject {

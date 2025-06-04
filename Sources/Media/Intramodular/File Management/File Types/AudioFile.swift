@@ -90,6 +90,7 @@ public struct AudioFile: MediaFile {
         metadata: [String: AnyCodable] = [:]
     ) async throws {
         try data.write(to: destinationURL)
+        
         try await self.init(url: destinationURL, metadata: metadata)
     }
     

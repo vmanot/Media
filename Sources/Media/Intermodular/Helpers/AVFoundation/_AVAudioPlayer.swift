@@ -4,8 +4,10 @@
 
 #if canImport(AVFoundation)
 
+import Diagnostics
 import AVFoundation
 import Swallow
+import SwallowMacrosClient
 
 class _AVAudioPlayer: NSObject, AVAudioPlayerDelegate {
     let asset: MediaAssetLocation
