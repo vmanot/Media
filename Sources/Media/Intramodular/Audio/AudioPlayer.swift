@@ -12,16 +12,14 @@ import Swallow
 public final class AudioPlayer: ObservableObject, @unchecked Sendable {
     public let objectWillChange = _AsyncObjectWillChangePublisher()
     
-    private var players: [_AVAudioPlayer] = []
+    private var currentPlayer: _AVAudioPlayer?
     
-    public var isPlaying: Bool {
-        players.contains(where: \.isPlaying)
-    }
+    @Published public private(set) var isPlaying: Bool = false
     
     public var volume: Double? {
         didSet {
             if let volume {
-                players.forEach({ $0.volume = volume  })
+                currentPlayer?.volume = volume
             }
         }
     }
@@ -38,36 +36,54 @@ public final class AudioPlayer: ObservableObject, @unchecked Sendable {
         _ = try? tearDown()
     }
     
-    public func play(
-        _ asset: MediaAssetLocation
-    ) async throws {
+    @MainActor
+    public func play(_ asset: MediaAssetLocation) async throws {
+
+        stop()
+        
+        // Create new player
         let player = _AVAudioPlayer(asset: asset, volume: self.volume)
+        currentPlayer = player
+        isPlaying = true
         
-        players.append(player)
-        
+        // Play and wait for completion
         try await withCheckedThrowingContinuation { continuation in
             objectWillChange.withCriticalScope { objectWillChange in
                 objectWillChange.send()
-
                 player.play { result in
-                    continuation.resume(with: result)
+                    switch result {
+                    case .success:
+                        continuation.resume()
+                    case .failure(let error):
+                        continuation.resume(throwing: error)
+                    }
                 }
             }
         }
         
-        players.removeAll(where: { $0 === player })
+        // Clean up after completion
+        currentPlayer = nil
+        isPlaying = false
     }
     
+    @MainActor
     public func stop() {
-        players.forEach({ $0.stop() })
-        players.removeAll()
+        currentPlayer?.stop()
+        currentPlayer = nil
+        isPlaying = false
+    }
+    
+    public var currentTime: TimeInterval {
+        currentPlayer?.player?.currentTime ?? 0
+    }
+    
+    public func seek(to time: TimeInterval) {
+        currentPlayer?.player?.currentTime = time
     }
 }
 
 extension AudioPlayer {
-    public func play(
-        _ url: URL
-    ) async throws {
+    public func play(_ url: URL) async throws {
         let audioSession = _AVAudioSession.shared
         try audioSession.setCategory(.playback, mode: .default)
         try audioSession.setActive(true)
