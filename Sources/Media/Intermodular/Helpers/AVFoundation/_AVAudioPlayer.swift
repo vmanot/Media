@@ -42,7 +42,7 @@ class _AVAudioPlayer: NSObject, AVAudioPlayerDelegate {
             let player = try AVAudioPlayer(from: asset)
             
             if let assetURL = asset.url {
-                try #assert(FileManager.default.fileExists(at: assetURL))
+                assert(FileManager.default.fileExists(at: assetURL))
             }
             
             player.delegate = self
